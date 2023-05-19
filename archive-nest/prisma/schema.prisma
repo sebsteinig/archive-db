@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model table_conversion_info {
+  pk_id                Int                    @id @default(autoincrement())
+  creation_at          DateTime               @default(now()) @db.Timestamptz(6)
+  levels               BigInt                 @default(1)
+  time_steps           BigInt                 @default(1)
+  xsize                BigInt
+  ysize                BigInt
+  xfirst               Float                  @db.Real
+  xinc                 Float                  @db.Real
+  yfirst               Float                  @db.Real
+  yinc                 Float                  @db.Real
+  nan_value_encoding   Int                    @default(255) @db.SmallInt
+  threshold            Float                  @default(3) @db.Real
+  table_execution_info table_execution_info[]
+  table_image_paths    table_image_paths?
+}
+
+model table_execution_info {
+  pk_id                 Int                   @id @default(autoincrement())
+  exp_id                String
+  config                String
+  nimbus_version        String
+  execution_date        DateTime              @default(now()) @db.Timestamp(6)
+  var_clt               Boolean               @default(false)
+  var_currents          Boolean               @default(false)
+  var_height            Boolean               @default(false)
+  var_liconc            Boolean               @default(false)
+  var_mlosts            Boolean               @default(false)
+  var_pfts              Boolean               @default(false)
+  var_pr                Boolean               @default(false)
+  var_sic               Boolean               @default(false)
+  var_snc               Boolean               @default(false)
+  var_tas               Boolean               @default(false)
+  var_tos               Boolean               @default(false)
+  var_winds             Boolean               @default(false)
+  metadata              Json?                 @db.Json
+  fk_id_conversion_info Int
+  table_conversion_info table_conversion_info @relation(fields: [fk_id_conversion_info], references: [pk_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_id_conversion_info")
+}
+
+model table_image_paths {
+  pk_id                 Int                   @id @default(autoincrement())
+  fk_id_conversion_info Int
+  path                  Unsupported("path")
+  extension             String?
+  metadata              Json?                 @db.Json
+  table_conversion_info table_conversion_info @relation(fields: [pk_id], references: [pk_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_id_conversion_info")
+}
