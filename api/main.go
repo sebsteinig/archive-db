@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive-api/routes"
 	"context"
 	"log"
 	"os"
@@ -45,6 +46,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+
+	routes.BuildExperimentRoutes(app)
 
 	if err := pool.Ping(context.Background()); err != nil {
 		log.Fatal("Unable to ping the database:", err)
