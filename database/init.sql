@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS public.table_variables
     id serial NOT NULL,
     name text COLLATE pg_catalog."default" NOT NULL,
     exp_id text COLLATE pg_catalog."default" NOT NULL,
-    paths text[] COLLATE pg_catalog."default" NOT NULL,
+    paths_ts text[] COLLATE pg_catalog."default" NOT NULL,
+    paths_mean text[] COLLATE pg_catalog."default" NOT NULL,
     created_at date NOT NULL DEFAULT now(),
     config_name text COLLATE pg_catalog."default" NOT NULL,
     levels integer NOT NULL,
@@ -66,6 +67,8 @@ CREATE TABLE IF NOT EXISTS public.table_variables
     nan_value_encoding integer NOT NULL,
     threshold real NOT NULL,
     chunks integer NOT NULL,
+    rx real,
+    ry real,
     metadata json NOT NULL,
     CONSTRAINT table_variables_pkey PRIMARY KEY (id),
     CONSTRAINT exp_id FOREIGN KEY (exp_id)

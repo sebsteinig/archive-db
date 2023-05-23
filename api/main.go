@@ -40,6 +40,7 @@ type Variable struct {
 func main() {
 	godotenv.Load(".env")
 	app := fiber.New(fiber.Config{AppName: "test"})
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal("Unable to connect to database:", err)
@@ -47,7 +48,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	routes.BuildExperimentRoutes(app)
+	routes.BuildExperimentRoutes(app, pool, &psql)
 
 	if err := pool.Ping(context.Background()); err != nil {
 		log.Fatal("Unable to ping the database:", err)
@@ -83,6 +84,8 @@ func main() {
 				&variable.Nan_value_encoding,
 				&variable.Threshold,
 				&variable.Chunks,
+				//&variable.Rx,
+				//&variable.Ry,
 				&variable.Metadata,
 			)
 			if err != nil {
