@@ -3,7 +3,8 @@ package routes
 import (
 	"archive-api/utils"
 	"context"
-	"database/sql"
+	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/Masterminds/squirrel"
@@ -12,8 +13,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Variables struct {
-	Variables [12]utils.Variable `json:"variables"`
+type RequestBody struct {
+	Table_nimbus_execution utils.NimbusExecution `json:"table_nimbus_execution"`
+	Table_variable         [12]utils.Variable    `json:"table_variable"`
+}
+
+type Request struct {
+	Request RequestBody `json:"request"`
 }
 
 func getExperimentByID(id string) error {
@@ -21,83 +27,77 @@ func getExperimentByID(id string) error {
 	return nil
 }
 
-func addVariablesWithExp(exp_id string, variables []utils.Variable, pool *pgxpool.Pool, psql *squirrel.StatementBuilderType) error {
+func arrayToString(arr []string) string {
+	res := "{"
+	for i, v := range arr {
+		res += fmt.Sprintf(`"%s"`, v)
+		if i < len(arr)-1 {
+			res += ","
+		}
+	}
+	res += "}"
+	return res
+}
+func placeholder_wrap(i *int, arg interface{}, args *[]interface{}) string {
+	*args = append(*args, fmt.Sprintf("'%v'", arg))
+	*i += 1
+	return fmt.Sprintf("$%d", *i)
+}
+func placeholder(i *int, arg interface{}, args *[]interface{}) string {
+	*args = append(*args, arg)
+	*i += 1
+	return fmt.Sprintf("$%d", *i)
+}
+func addVariablesWithExp(exp_id string, request *Request, pool *pgxpool.Pool, psql *squirrel.StatementBuilderType) error {
+
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
-			upsert_exp, arg, err_upsert_exp := psql.Insert("table_experiments").Columns("exp_id").Values(exp_id).ToSql()
-			if err_upsert_exp != nil {
-				log.Default().Println("pqsl sql error :", err_upsert_exp)
-				return err_upsert_exp
-			}
-			_, err_upsert_exp_cmd := tx.Exec(context.Background(), upsert_exp+" ON CONFLICT (exp_id) DO NOTHING", arg...)
-			if err_upsert_exp_cmd != nil {
-				log.Default().Println("tx exec error :", upsert_exp+"ON CONFLICT (exp_id) DO NOTHING", err_upsert_exp_cmd)
-				return err_upsert_exp_cmd
-			}
-			_, err := tx.CopyFrom(
-				context.Background(),
-				pgx.Identifier{"table_variables"},
-				[]string{
-					"name",
-					"exp_id",
-					"paths_ts",
-					"paths_mean",
-					"config_name",
-					"levels",
-					"timesteps",
-					"xsize",
-					"xfirst",
-					"xinc",
-					"ysize",
-					"yfirst",
-					"yinc",
-					"extension",
-					"lossless",
-					"nan_value_encoding",
-					"threshold",
-					"chunks",
-					"rx",
-					"ry",
-					"metadata"},
-				pgx.CopyFromSlice(len(variables), func(i int) ([]any, error) {
-					rx := sql.NullFloat64{
-						Float64: variables[i].Rx,
-						Valid:   variables[i].Rx != 0,
-					}
-					ry := sql.NullFloat64{
-						Float64: variables[i].Rx,
-						Valid:   variables[i].Rx != 0,
-					}
-					return []any{
-						variables[i].Name,
-						variables[i].Exp_id,
-						variables[i].Paths_ts,
-						variables[i].Paths_mean,
-						variables[i].Config_name,
-						variables[i].Levels,
-						variables[i].Timesteps,
-						variables[i].Xsize,
-						variables[i].Xfirst,
-						variables[i].Xinc,
-						variables[i].Ysize,
-						variables[i].Yfirst,
-						variables[i].Yinc,
-						variables[i].Extension,
-						variables[i].Lossless,
-						variables[i].Nan_value_encoding,
-						variables[i].Threshold,
-						variables[i].Chunks,
-						rx,
-						ry,
-						variables[i].Metadata,
-					}, nil
-				}),
+			idx := 0
+			args := make([]interface{}, 0, 144)
+
+			insert_into_table_nimbus := "INSERT INTO table_nimbus_execution (exp_id,config_name,extension,lossless,nan_value_encoding,threshold,chunks,rx,ry) VALUES "
+
+			insert_into_table_nimbus += fmt.Sprintf("(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+				placeholder_wrap(&idx, request.Request.Table_nimbus_execution.Exp_id, &args),
+				placeholder_wrap(&idx, request.Request.Table_nimbus_execution.Config_name, &args),
+				placeholder_wrap(&idx, request.Request.Table_nimbus_execution.Extension, &args),
+				placeholder(&idx, request.Request.Table_nimbus_execution.Lossless, &args),
+				placeholder(&idx, request.Request.Table_nimbus_execution.Nan_value_encoding, &args),
+				placeholder(&idx, request.Request.Table_nimbus_execution.Threshold, &args),
+				placeholder(&idx, request.Request.Table_nimbus_execution.Chunks, &args),
+				placeholder(&idx, request.Request.Table_nimbus_execution.Rx, &args),
+				placeholder(&idx, request.Request.Table_nimbus_execution.Ry, &args),
 			)
-			if err != nil {
-				log.Default().Println("copy from error :", err)
-				return err
+			insert_into_table_variable := "INSERT INTO table_variable (name, paths_ts, paths_mean, levels, timesteps, xsize, xfirst, xinc, ysize, yfirst, yinc, metadata) VALUES "
+			for i, v := range request.Request.Table_variable {
+				metadata, err := json.Marshal(v.Metadata)
+				if err != nil {
+					return err
+				}
+				insert_into_table_variable += fmt.Sprintf("(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+					placeholder_wrap(&idx, v.Name, &args),
+					placeholder(&idx, v.Paths_ts, &args),
+					placeholder(&idx, v.Paths_mean, &args),
+					placeholder(&idx, v.Levels, &args),
+					placeholder(&idx, v.Timesteps, &args),
+					placeholder(&idx, v.Xsize, &args),
+					placeholder(&idx, v.Xfirst, &args),
+					placeholder(&idx, v.Xinc, &args),
+					placeholder(&idx, v.Ysize, &args),
+					placeholder(&idx, v.Yfirst, &args),
+					placeholder(&idx, v.Yinc, &args),
+					placeholder(&idx, metadata, &args),
+				)
+				if i < len(request.Request.Table_variable)-1 {
+					insert_into_table_variable += ","
+				}
 			}
-			return nil
+			fmt.Println(psql.Insert("table").Values("test", "t2").ToSql())
+			fmt.Println(len(args))
+			sql := fmt.Sprintf("WITH nimbus_id AS (%s RETURNING id), var_ids_name AS (%s RETURNING name,id) INSERT INTO join_nimbus_execution_variables SELECT nimbus_id.id AS id_nimbus, var_ids_name.name AS var_name, var_ids_name.id AS var_id FROM var_ids_name CROSS JOIN nimbus_id;", insert_into_table_nimbus, insert_into_table_variable)
+			fmt.Println(sql)
+			_, err := tx.Exec(context.Background(), sql, args...)
+			return err
 		},
 	); err != nil {
 		log.Default().Println("transactions error :", err)
@@ -118,12 +118,12 @@ func BuildExperimentRoutes(app *fiber.App, pool *pgxpool.Pool, psql *squirrel.St
 	experiments_routes.Post("/:id/add", func(c *fiber.Ctx) error {
 		c.Accepts("application/json")
 
-		variables := new(Variables)
+		request := new(Request)
 		id := c.Params("id")
-		if err := c.BodyParser(variables); err != nil {
+		if err := c.BodyParser(request); err != nil {
 			log.Default().Println(err)
 			return err
 		}
-		return addVariablesWithExp(id, variables.Variables[:], pool, psql)
+		return addVariablesWithExp(id, request, pool, psql)
 	})
 }
