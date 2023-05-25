@@ -13,11 +13,12 @@ import (
 
 func insertNimbusExecutionSql(ne utils.NimbusExecution, pl *utils.Placeholder) string {
 	insert_into_table_nimbus := "INSERT INTO table_nimbus_execution" +
-		" (exp_id,config_name,extension,lossless,nan_value_encoding,threshold,chunks,rx,ry) VALUES "
+		" (exp_id,config_name,created_at,extension,lossless,nan_value_encoding,threshold,chunks,rx,ry) VALUES "
 
-	insert_into_table_nimbus += fmt.Sprintf("(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+	insert_into_table_nimbus += fmt.Sprintf("(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
 		pl.Get(ne.Exp_id),
 		pl.Get(ne.Config_name),
+		pl.Get(ne.Created_at),
 		pl.Get(ne.Extension),
 		pl.Get(ne.Lossless),
 		pl.Get(ne.Nan_value_encoding),
@@ -59,7 +60,6 @@ func insertVariablesSql(variables []utils.Variable, pl *utils.Placeholder) (stri
 }
 
 func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Pool) error {
-
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
 			pl := new(utils.Placeholder)
@@ -72,7 +72,7 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 			}
 			sql := fmt.Sprintf("WITH nimbus_id AS (%s"+
 				" ON CONFLICT (config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)"+
-				" DO UPDATE SET created_at = now() RETURNING id),"+
+				" DO UPDATE SET created_at = excluded.created_at WHERE table_nimbus_execution.created_at < excluded.created_at RETURNING id),"+
 				" var_ids_name AS (%s RETURNING name,id)"+
 				" INSERT INTO join_nimbus_execution_variables"+
 				" SELECT nimbus_id.id AS id_nimbus_execution,"+
