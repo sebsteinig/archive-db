@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -38,17 +37,17 @@ func (exp Experiment) Validate() (error, []fiber.Map) {
 }
 
 type NimbusExecution struct {
-	Id                 int       `json:"id"`
-	Exp_id             string    `json:"exp_id" validate:"required"`
-	Config_name        string    `json:"config_name" validate:"required"`
-	Created_at         time.Time `json:"created_at"`
-	Extension          string    `json:"extension" validate:"required"`
-	Lossless           bool      `json:"lossless" validate:"required"`
-	Nan_value_encoding int       `json:"nan_value_encoding" validate:"required"`
-	Threshold          float32   `json:"threshold" validate:"required"`
-	Chunks             int       `json:"chunks" validate:"required,gte=0"`
-	Rx                 float64   `json:"rx" validate:""`
-	Ry                 float64   `json:"ry" validate:""`
+	Id                 int     `json:"id"`
+	Exp_id             string  `json:"exp_id" validate:"required"`
+	Config_name        string  `json:"config_name" validate:"required"`
+	Created_at         string  `json:"created_at"`
+	Extension          string  `json:"extension" validate:"required"`
+	Lossless           bool    `json:"lossless" validate:"required"`
+	Nan_value_encoding int     `json:"nan_value_encoding" validate:"required"`
+	Threshold          float32 `json:"threshold" validate:"required"`
+	Chunks             int     `json:"chunks" validate:"required,gte=0"`
+	Rx                 float64 `json:"rx" validate:""`
+	Ry                 float64 `json:"ry" validate:""`
 }
 
 func (exp NimbusExecution) Validate() (error, []fiber.Map) {

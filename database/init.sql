@@ -24,7 +24,7 @@ ALTER TABLE IF EXISTS public.table_variable
 CREATE TABLE IF NOT EXISTS public.table_nimbus_execution
 (
     id serial NOT NULL,
-    created_at date NOT NULL DEFAULT now(),
+    created_at timestamp without time zone NOT NULL DEFAULT now(),
     config_name text COLLATE pg_catalog."default" NOT NULL,
     extension text COLLATE pg_catalog."default" NOT NULL,
     lossless boolean NOT NULL,

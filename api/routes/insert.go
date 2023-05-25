@@ -16,7 +16,7 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 	insert_routes.Get("/clean", func(c *fiber.Ctx) error {
 		return services.Clean(pool)
 	})
-	insert_routes.Post("/:id/add", func(c *fiber.Ctx) error {
+	insert_routes.Post("/:id", func(c *fiber.Ctx) error {
 		c.Accepts("application/json")
 
 		request := new(utils.Request)
