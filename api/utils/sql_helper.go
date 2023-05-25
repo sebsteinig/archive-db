@@ -2,26 +2,20 @@ package utils
 
 import "fmt"
 
-type Placholder struct {
+type Placeholder struct {
 	idx  int
 	Args []interface{}
 }
 
-func (pl *Placholder) Build(length int, cap int) {
-	*pl = Placholder{
+func (pl *Placeholder) Build(length int, cap int) {
+	*pl = Placeholder{
 		idx:  0,
 		Args: make([]interface{}, length, cap),
 	}
 }
 
-func (pl *Placholder) Get(arg interface{}) string {
+func (pl *Placeholder) Get(arg interface{}) string {
 	pl.Args = append(pl.Args, arg)
-	pl.idx += 1
-	return fmt.Sprintf("$%d", pl.idx)
-}
-
-func (pl *Placholder) Wrap(arg interface{}) string {
-	pl.Args = append(pl.Args, fmt.Sprintf("'%v'", arg))
 	pl.idx += 1
 	return fmt.Sprintf("$%d", pl.idx)
 }

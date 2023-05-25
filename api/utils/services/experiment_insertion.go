@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func insertNimbusExecutionSql(ne utils.NimbusExecution, pl *utils.Placholder) string {
+func insertNimbusExecutionSql(ne utils.NimbusExecution, pl *utils.Placeholder) string {
 	insert_into_table_nimbus := "INSERT INTO table_nimbus_execution" +
 		" (exp_id,config_name,extension,lossless,nan_value_encoding,threshold,chunks,rx,ry) VALUES "
 
@@ -30,7 +29,7 @@ func insertNimbusExecutionSql(ne utils.NimbusExecution, pl *utils.Placholder) st
 	return insert_into_table_nimbus
 }
 
-func insertVariablesSql(variables []utils.Variable, pl *utils.Placholder) (string, error) {
+func insertVariablesSql(variables []utils.Variable, pl *utils.Placeholder) (string, error) {
 	insert_into_table_variable := "INSERT INTO table_variable " +
 		"(name, paths_ts, paths_mean, levels, timesteps, xsize, xfirst, xinc, ysize, yfirst, yinc, metadata) VALUES "
 	for i, v := range variables {
@@ -59,11 +58,11 @@ func insertVariablesSql(variables []utils.Variable, pl *utils.Placholder) (strin
 	return insert_into_table_variable, nil
 }
 
-func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Pool, psql *squirrel.StatementBuilderType) error {
+func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Pool) error {
 
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
-			pl := new(utils.Placholder)
+			pl := new(utils.Placeholder)
 			pl.Build(0, 144)
 
 			insert_into_table_nimbus := insertNimbusExecutionSql(request.Request.Table_nimbus_execution, pl)
@@ -92,6 +91,7 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 		log.Default().Println("transactions error :", err)
 		return err
 	}
+	log.Default().Println("insert success", exp_id)
 	return nil
 }
 
