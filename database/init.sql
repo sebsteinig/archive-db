@@ -1,59 +1,9 @@
-CREATE TABLE IF NOT EXISTS public.table_experiments
-(
-    exp_id text COLLATE pg_catalog."default" NOT NULL,
-    description text COLLATE pg_catalog."default",
-    CONSTRAINT table_experiments_pkey PRIMARY KEY (exp_id)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.table_experiments
-    OWNER to root;
-
-CREATE TABLE IF NOT EXISTS public.table_collections
-(
-    name text COLLATE pg_catalog."default" NOT NULL,
-    description text COLLATE pg_catalog."default",
-    CONSTRAINT table_collections_pkey PRIMARY KEY (name)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.table_collections
-    OWNER to root;
-
-
-CREATE TABLE IF NOT EXISTS public.join_collections_experiments
-(
-    exp_id text COLLATE pg_catalog."default" NOT NULL,
-    collection_name text COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT collection_name FOREIGN KEY (collection_name)
-        REFERENCES public.table_collections (name) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID,
-    CONSTRAINT exp_id FOREIGN KEY (exp_id)
-        REFERENCES public.table_experiments (exp_id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.join_collections_experiments
-    OWNER to root;
-
-
-CREATE TABLE IF NOT EXISTS public.table_variables
+CREATE TABLE IF NOT EXISTS public.table_variable
 (
     id serial NOT NULL,
     name text COLLATE pg_catalog."default" NOT NULL,
-    exp_id text COLLATE pg_catalog."default" NOT NULL,
-    paths_ts text[] COLLATE pg_catalog."default" NOT NULL,
-    paths_mean text[] COLLATE pg_catalog."default" NOT NULL,
-    created_at date NOT NULL DEFAULT now(),
-    config_name text COLLATE pg_catalog."default" NOT NULL,
+    paths_ts text[] NOT NULL,
+    paths_mean text[] NOT NULL,
     levels integer NOT NULL,
     timesteps integer NOT NULL,
     xsize integer NOT NULL,
@@ -62,17 +12,64 @@ CREATE TABLE IF NOT EXISTS public.table_variables
     ysize integer NOT NULL,
     yfirst real NOT NULL,
     yinc real NOT NULL,
+    metadata json NOT NULL,
+    CONSTRAINT table_variable_pkey PRIMARY KEY (id)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.table_variable
+    OWNER to root;
+
+CREATE TABLE IF NOT EXISTS public.table_nimbus_execution
+(
+    id serial NOT NULL,
+    created_at date NOT NULL DEFAULT now(),
+    config_name text COLLATE pg_catalog."default" NOT NULL,
     extension text COLLATE pg_catalog."default" NOT NULL,
     lossless boolean NOT NULL,
     nan_value_encoding integer NOT NULL,
-    threshold real NOT NULL,
     chunks integer NOT NULL,
-    rx real,
-    ry real,
-    metadata json NOT NULL,
-    CONSTRAINT table_variables_pkey PRIMARY KEY (id),
-    CONSTRAINT exp_id FOREIGN KEY (exp_id)
-        REFERENCES public.table_experiments (exp_id) MATCH SIMPLE
+    rx real NOT NULL,
+    ry real NOT NULL,
+    exp_id text COLLATE pg_catalog."default" NOT NULL,
+    threshold real NOT NULL,
+    CONSTRAINT table_nimbus_execution_pkey PRIMARY KEY (id),
+    CONSTRAINT unique_config UNIQUE (config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.table_nimbus_execution
+    OWNER to root;
+
+
+CREATE TABLE IF NOT EXISTS public.table_exp
+(
+    exp_id text COLLATE pg_catalog."default" NOT NULL,
+    age bigint,
+    metadata json,
+    CONSTRAINT exp_id PRIMARY KEY (exp_id)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.table_exp
+    OWNER to root;
+
+CREATE TABLE IF NOT EXISTS public.join_nimbus_execution_variables
+(
+    id_nimbus_execution serial NOT NULL,
+    variable_name text COLLATE pg_catalog."default" NOT NULL,
+    variable_id serial NOT NULL,
+    CONSTRAINT unique_set UNIQUE (id_nimbus_execution, variable_name),
+    CONSTRAINT fk_nimbus_execution FOREIGN KEY (id_nimbus_execution)
+        REFERENCES public.table_nimbus_execution (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT fk_variable FOREIGN KEY (variable_id)
+        REFERENCES public.table_variable (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
         NOT VALID
@@ -80,5 +77,5 @@ CREATE TABLE IF NOT EXISTS public.table_variables
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS public.table_variables
+ALTER TABLE IF EXISTS public.join_nimbus_execution_variables
     OWNER to root;
