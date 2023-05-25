@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS public.join_nimbus_execution_variables
     id_nimbus_execution serial NOT NULL,
     variable_name text COLLATE pg_catalog."default" NOT NULL,
     variable_id serial NOT NULL,
-    CONSTRAINT unique_set UNIQUE (id_nimbus_execution, variable_name, variable_id),
+    CONSTRAINT unique_set UNIQUE (id_nimbus_execution, variable_name),
     CONSTRAINT fk_nimbus_execution FOREIGN KEY (id_nimbus_execution)
         REFERENCES public.table_nimbus_execution (id) MATCH SIMPLE
         ON UPDATE NO ACTION

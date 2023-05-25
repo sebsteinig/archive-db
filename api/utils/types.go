@@ -82,3 +82,12 @@ func (variable Variable) Validate() (error, []fiber.Map) {
 	}
 	return nil, errors
 }
+
+type RequestBody struct {
+	Table_nimbus_execution NimbusExecution `json:"table_nimbus_execution"`
+	Table_variable         []Variable      `json:"table_variable"`
+}
+
+type Request struct {
+	Request RequestBody `json:"request"`
+}
