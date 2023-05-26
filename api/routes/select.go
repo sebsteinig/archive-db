@@ -16,6 +16,11 @@ func BuildSelectRoutes(app *fiber.App, pool *pgxpool.Pool) {
 		Expiration:   30 * time.Minute,
 		CacheControl: true,
 	}))
+
+	select_routes.Get("/collection", func(c *fiber.Ctx) error {
+		return services.GetExperimentsByIDs(c, pool)
+	})
+
 	select_routes.Get("/:id", func(c *fiber.Ctx) error {
 		id := c.Params("id")
 		return services.GetExperimentByID(id, c, pool)
