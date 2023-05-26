@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	//"log"
+	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -69,14 +69,14 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 		}
 	}
 	if value := c.Query("ids", "###error###"); value != "###error###" && in("ids", whitelist) {
-		if !strings.HasPrefix(value, "[") {
-			return nil
-		}
-		params["exp_id"] = ParamValue{
-			value: value,
-			operator: func(key string, value interface{}, pl *Placeholder) string {
-				return fmt.Sprintf("%s IN '%s%%' ", key, pl.Get(value))
-			},
+		ids, ok := idsToSlice(value)
+		if ok {
+			params["exp_id"] = ParamValue{
+				value: ids,
+				operator: func(key string, value interface{}, pl *Placeholder) string {
+					return fmt.Sprintf("%s IN '%s%%' ", key, pl.Get(value))
+				},
+			}
 		}
 	}
 	return nil
@@ -98,4 +98,15 @@ func in(value string, arr []string) bool {
 		}
 	}
 	return false
+}
+
+func idsToSlice(ids string) ([]string, bool) {
+	ids, found_prefix := strings.CutPrefix(ids, "[")
+	ids, found_suffix := strings.CutSuffix(ids, "]")
+	if !found_prefix || !found_suffix {
+		log.Default().Println("ids are not specified in the right format", ids)
+		return nil, false
+	}
+	res := strings.Split(ids, ",")
+	return res, true
 }
