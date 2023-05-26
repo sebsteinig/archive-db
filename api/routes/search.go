@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -20,6 +21,11 @@ func BuildSearchRoutes(app *fiber.App, pool *pgxpool.Pool) {
 			return c.SendStatus(fiber.StatusTooManyRequests)
 		},
 		LimiterMiddleware: limiter.SlidingWindow{},
+	}))
+
+	search_routes.Use(cache.New(cache.Config{
+		Expiration:   30 * time.Minute,
+		CacheControl: true,
 	}))
 
 	search_routes.Get("/", func(c *fiber.Ctx) error {
