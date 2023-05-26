@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -67,6 +68,30 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 			},
 		}
 	}
+	if in("ids", whitelist) {
+		if value := c.Query("ids", "###error###"); value != "###error###" {
+			ids, ok := idsToSlice(value)
+			if ok {
+				params["exp_id"] = ParamValue{
+					value: ids,
+					operator: func(key string, value interface{}, pl *Placeholder) string {
+						exp_ids := value.([]string)
+						var tab []string
+						for i := 0; i < len(exp_ids); i++ {
+							tab = append(tab, pl.Get(exp_ids[i]))
+						}
+						values := fmt.Sprintf("(%s)", strings.Join(tab, ","))
+						return fmt.Sprintf("%s IN %s ", key, values)
+					},
+				}
+			} else {
+				return fmt.Errorf("ids not specified")
+			}
+		} else {
+			return fmt.Errorf("ids not specified")
+		}
+	}
+
 	return nil
 }
 
@@ -86,4 +111,15 @@ func in(value string, arr []string) bool {
 		}
 	}
 	return false
+}
+
+func idsToSlice(ids string) ([]string, bool) {
+	ids, found_prefix := strings.CutPrefix(ids, "[")
+	ids, found_suffix := strings.CutSuffix(ids, "]")
+	if !found_prefix || !found_suffix {
+		log.Default().Println("ids are not specified in the right format", ids)
+		return nil, false
+	}
+	res := strings.Split(ids, ",")
+	return res, true
 }
