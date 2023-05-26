@@ -64,7 +64,7 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 		params["exp_id"] = ParamValue{
 			value: value,
 			operator: func(key string, value interface{}, pl *Placeholder) string {
-				return fmt.Sprintf("%s LIKE '%s%%' ", key, pl.Get(value))
+				return fmt.Sprintf("%s LIKE %s ||'%%'", key, pl.Get(value))
 			},
 		}
 	}
