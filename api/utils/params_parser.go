@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -68,6 +69,17 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 			},
 		}
 	}
+	if value := c.Query("ids", "###error###"); value != "###error###" && in("ids", whitelist) {
+		if !strings.HasPrefix(value, "[") {
+			return nil
+		}
+		params["exp_id"] = ParamValue{
+			value: value,
+			operator: func(key string, value interface{}, pl *Placeholder) string {
+				return fmt.Sprintf("%s IN '%s%%' ", key, pl.Get(value))
+			},
+		}
+	}
 	return nil
 }
 
@@ -76,6 +88,7 @@ func (params Params) ParamToSql(pl *Placeholder) string {
 	for key, value := range params {
 		res += fmt.Sprintf("AND %s", value.operator(key, value.value, pl))
 	}
+
 	return res
 }
 

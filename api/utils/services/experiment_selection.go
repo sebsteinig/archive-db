@@ -122,3 +122,10 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 	})
 	return c.JSON(responses)
 }
+
+func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
+	params := make(utils.Params)
+	params.ParseParams(c, "ids", "config_name", "extension", "lossless", "threshold", "rx", "ry", "chunks")
+
+	return nil
+}
