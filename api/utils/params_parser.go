@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"log"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,7 +17,6 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 	default_operator := func(key string, value interface{}, pl *Placeholder) string {
 		return fmt.Sprintf("%s = %s ", key, pl.Get(value))
 	}
-	log.Default().Println(c.Query("config_name"))
 	if value := c.Query("config_name", "##error##"); value != "##error##" && in("config_name", whitelist) {
 		params["config_name"] = ParamValue{
 			value:    value,
@@ -60,8 +59,8 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 			operator: default_operator,
 		}
 	}
-	if value := c.Query("id", "##error##"); value != "error" && in("id", whitelist) {
-		params["id"] = ParamValue{
+	if value := c.Query("like", "##error##"); value != "error" && in("like", whitelist) {
+		params["exp_id"] = ParamValue{
 			value: value,
 			operator: func(key string, value interface{}, pl *Placeholder) string {
 				return fmt.Sprintf("%s LIKE '%s%%' ", key, pl.Get(value))
@@ -72,11 +71,12 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 }
 
 func (params Params) ParamToSql(pl *Placeholder) string {
-	res := " "
+
+	res := make([]string, 0, len(params))
 	for key, value := range params {
-		res += fmt.Sprintf("AND %s", value.operator(key, value.value, pl))
+		res = append(res, fmt.Sprintf("%s", value.operator(key, value.value, pl)))
 	}
-	return res
+	return strings.Join(res, " AND ")
 }
 
 func in(value string, arr []string) bool {
