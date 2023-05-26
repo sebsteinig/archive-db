@@ -68,17 +68,30 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 			},
 		}
 	}
-	if value := c.Query("ids", "###error###"); value != "###error###" && in("ids", whitelist) {
-		ids, ok := idsToSlice(value)
-		if ok {
-			params["exp_id"] = ParamValue{
-				value: ids,
-				operator: func(key string, value interface{}, pl *Placeholder) string {
-					return fmt.Sprintf("%s IN '%s%%' ", key, pl.Get(value))
-				},
+	if in("ids", whitelist) {
+		if value := c.Query("ids", "###error###"); value != "###error###" {
+			ids, ok := idsToSlice(value)
+			if ok {
+				params["exp_id"] = ParamValue{
+					value: ids,
+					operator: func(key string, value interface{}, pl *Placeholder) string {
+						exp_ids := value.([]string)
+						var tab []string
+						for i := 0; i < len(exp_ids); i++ {
+							tab = append(tab, pl.Get(exp_ids[i]))
+						}
+						values := fmt.Sprintf("(%s)", strings.Join(tab, ","))
+						return fmt.Sprintf("%s IN %s ", key, values)
+					},
+				}
+			} else {
+				return fmt.Errorf("ids not specified")
 			}
+		} else {
+			return fmt.Errorf("ids not specified")
 		}
 	}
+
 	return nil
 }
 

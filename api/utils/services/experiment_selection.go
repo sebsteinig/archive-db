@@ -127,7 +127,11 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	pl := new(utils.Placeholder)
 	pl.Build(0, 10)
 	params := make(utils.Params)
-	params.ParseParams(c, "ids", "config_name", "extension", "lossless", "threshold", "rx", "ry", "chunks")
+	err_parse := params.ParseParams(c, "ids", "config_name", "extension", "lossless", "threshold", "rx", "ry", "chunks")
+	if err_parse != nil {
+		log.Default().Printf(err_parse.Error())
+		return nil
+	}
 	params_sql := params.ParamToSql(pl)
 	sql := fmt.Sprintf(`WITH nimbus_run AS 
 	(
@@ -174,36 +178,38 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return err
 	}
 	defer rows.Close()
-	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
-		var res Response
-		err := row.Scan(
-			&res.VariableName,
-			&res.Path_ts,
-			&res.Path_mean,
-			&res.Levels,
-			&res.Timesteps,
-			&res.Xsize,
-			&res.Xfirst,
-			&res.Yinc,
-			&res.Ysize,
-			&res.Yfirst,
-			&res.Xinc,
-			&res.Metadata,
-			&res.Created_at,
-			&res.Config_name,
-			&res.Extension,
-			&res.Lossless,
-			&res.Nan_value_encoding,
-			&res.Chunks,
-			&res.Rx,
-			&res.Ry,
-			&res.Exp_id,
-			&res.Threshold,
-		)
-		if err != nil {
-			log.Default().Println(err)
-		}
-		return res, err
+	var map_exp map[string][]Response = make(map[string][]Response)
+	var res Response
+	_, err_map := pgx.ForEachRow(rows, []any{
+		&res.VariableName,
+		&res.Path_ts,
+		&res.Path_mean,
+		&res.Levels,
+		&res.Timesteps,
+		&res.Xsize,
+		&res.Xfirst,
+		&res.Yinc,
+		&res.Ysize,
+		&res.Yfirst,
+		&res.Xinc,
+		&res.Metadata,
+		&res.Created_at,
+		&res.Config_name,
+		&res.Extension,
+		&res.Lossless,
+		&res.Nan_value_encoding,
+		&res.Chunks,
+		&res.Rx,
+		&res.Ry,
+		&res.Exp_id,
+		&res.Threshold,
+	}, func() error {
+		map_exp[res.Exp_id] = append(map_exp[res.Exp_id], res)
+		return nil
 	})
-	return c.JSON(responses)
+	if err_map != nil {
+		log.Default().Println("map failed, error :", err_map)
+		return err_map
+	}
+	return c.JSON(map_exp)
 }
