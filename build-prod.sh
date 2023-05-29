@@ -14,7 +14,7 @@ else
         exit 1
       fi
       # Checkout to the specified branch
-      git checkout "release-$2"
+      git checkout "release-${2//./-}"
       ;;
     *)
       echo "Invalid option: $1"

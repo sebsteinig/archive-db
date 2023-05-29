@@ -8,6 +8,8 @@ services :
       - 3000:3000    
     depends_on : 
       - db
+    networks:
+      - db_network
   db :
     container_name : postgres_container
     build :
@@ -18,12 +20,16 @@ services :
       POSTGRES_USER : root
       POSTGRES_PASSWORD : root
       POSTGRES_DB : archive
-    ports:
-      - 5432:5432
+    networks:
+      - db_network
     volumes:
           - data_prod:/var/lib/postgresql/data
           - backup_prod:/var/lib/postgresql/backup
           - logs_prod:/var/lib/postgresql/logs
+
+networks:
+  db_network:
+    driver: bridge
 
 volumes:
   data_prod:
