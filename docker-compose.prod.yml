@@ -1,0 +1,37 @@
+services :
+  api :
+    container_name : api_container
+    build :
+      context : ./api
+      dockerfile : Dockerfile
+    ports :
+      - 3000:3000    
+    depends_on : 
+      - db
+    networks:
+      - db_network
+  db :
+    container_name : postgres_container
+    build :
+      context : ./database
+      dockerfile : Dockerfile
+    restart : always
+    environment : 
+      POSTGRES_USER : root
+      POSTGRES_PASSWORD : root
+      POSTGRES_DB : archive
+    networks:
+      - db_network
+    volumes:
+          - data_prod:/var/lib/postgresql/data
+          - backup_prod:/var/lib/postgresql/backup
+          - logs_prod:/var/lib/postgresql/logs
+
+networks:
+  db_network:
+    driver: bridge
+
+volumes:
+  data_prod:
+  backup_prod:
+  logs_prod:

@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.table_nimbus_execution
     exp_id text COLLATE pg_catalog."default" NOT NULL,
     threshold real NOT NULL,
     CONSTRAINT table_nimbus_execution_pkey PRIMARY KEY (id),
-    CONSTRAINT unique_config UNIQUE (config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)
+    CONSTRAINT unique_config UNIQUE (exp_id, config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)
 )
 
 TABLESPACE pg_default;

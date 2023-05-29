@@ -71,7 +71,7 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 				return err_sql
 			}
 			sql := fmt.Sprintf("WITH nimbus_id AS (%s"+
-				" ON CONFLICT (config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)"+
+				" ON CONFLICT (exp_id, config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)"+
 				" DO UPDATE SET created_at = excluded.created_at WHERE table_nimbus_execution.created_at < excluded.created_at RETURNING id),"+
 				" var_ids_name AS (%s RETURNING name,id)"+
 				" INSERT INTO join_nimbus_execution_variables"+
