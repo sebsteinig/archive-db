@@ -1,0 +1,63 @@
+services :
+  api :
+    container_name : api_container
+    build :
+      context : ./api
+      dockerfile : Dockerfile
+    ports :
+      - 3000:3000    
+    depends_on : 
+      - db
+  db :
+    container_name : postgres_container
+    build :
+      context : ./database
+      dockerfile : Dockerfile
+    restart : always
+    environment : 
+      POSTGRES_USER : root
+      POSTGRES_PASSWORD : root
+      POSTGRES_DB : archive
+    ports:
+      - 5432:5432
+    volumes:
+      - data_dev:/var/lib/postgresql/data
+      - backup_dev:/var/lib/postgresql/backup
+      - logs_dev:/var/lib/postgresql/logs
+  db-test :
+    container_name : test_postgres_container
+    build :
+      context : ./database
+      dockerfile : Dockerfile
+    restart : always
+    environment : 
+      POSTGRES_USER : root
+      POSTGRES_PASSWORD : root
+      POSTGRES_DB : archive
+    ports:
+      - 5433:5432
+    volumes:
+      - data_test:/var/lib/postgresql/data
+      - backup_test:/var/lib/postgresql/backup
+      - logs_test:/var/lib/postgresql/logs
+  pgadmin : 
+    container_name : pgadmin4_container
+    image : dpage/pgadmin4
+    restart : always
+    environment :
+      PGADMIN_DEFAULT_EMAIL : admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD : root
+    ports :
+      - 5050:80    
+    depends_on : 
+      - db
+
+
+volumes:
+  data_dev:
+  backup_dev:
+  logs_dev:
+
+  data_test:
+  backup_test:
+  logs_test:

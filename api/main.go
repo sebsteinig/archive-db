@@ -37,9 +37,9 @@ func main() {
 	routes.BuildSelectRoutes(app, pool)
 	routes.BuildSearchRoutes(app, pool)
 
-	if err := pool.Ping(context.Background()); err != nil {
+	/*if err := pool.Ping(context.Background()); err != nil {
 		log.Fatal("Unable to ping the database:", err)
-	}
+	}*/
 
 	if err := app.Listen(":3000"); err != nil {
 		log.Fatal("Unable to listen :", err)
