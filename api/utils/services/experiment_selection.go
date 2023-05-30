@@ -43,11 +43,24 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 	params := make(utils.Params)
 	params.ParseParams(c, "config_name", "extension", "lossless", "threshold", "rx", "ry", "chunks")
 	params_sql := params.ParamToSql(pl)
+	if params_sql != "" {
+		params_sql = "AND " + params_sql
+	}
+	param_variables := make(utils.Params)
+	err_variables_sql := param_variables.ParseParams(c, "variables")
+	if err_variables_sql != nil {
+		log.Default().Printf(err_variables_sql.Error())
+		return nil
+	}
+	param_variables_sql := param_variables.ParamToSql(pl)
+	if param_variables_sql != "" {
+		param_variables_sql = "AND " + param_variables_sql
+	}
 	sql := fmt.Sprintf(`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
-		WHERE exp_id = %s`+params_sql+`
+		WHERE exp_id = %s `+params_sql+`
 		ORDER BY created_at desc
 		LIMIT 1
 	)
@@ -81,7 +94,7 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 			INNER JOIN nimbus_run 
 			ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
 		) AS joined
-	ON table_variable.id = joined.variable_id`, pl.Get(id))
+	ON table_variable.id = joined.variable_id %s`, pl.Get(id), param_variables_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {
 		fmt.Println(pl.Args...)
@@ -132,12 +145,23 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		log.Default().Printf(err_parse.Error())
 		return nil
 	}
+	param_variables := make(utils.Params)
+	err_variables_sql := param_variables.ParseParams(c, "variables")
+	if err_variables_sql != nil {
+		log.Default().Printf(err_variables_sql.Error())
+		return nil
+	}
+	param_variables_sql := param_variables.ParamToSql(pl)
+	if param_variables_sql != "" {
+		param_variables_sql = "AND " + param_variables_sql
+	}
+
 	params_sql := params.ParamToSql(pl)
 	sql := fmt.Sprintf(`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
-		WHERE ` + params_sql + `
+		WHERE `+params_sql+`
 		ORDER BY created_at desc
 	)
 	SELECT 
@@ -170,7 +194,8 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 			INNER JOIN nimbus_run 
 			ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
 		) AS joined
-	ON table_variable.id = joined.variable_id`)
+	ON table_variable.id = joined.variable_id %s`, param_variables_sql)
+
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {
 		fmt.Println(pl.Args...)
