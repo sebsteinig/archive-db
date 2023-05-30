@@ -70,7 +70,7 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 	}
 	if in("ids", whitelist) {
 		if value := c.Query("ids", "###error###"); value != "###error###" {
-			ids, ok := idsToSlice(value)
+			ids, ok := itemsToSlice(value)
 			if ok {
 				params["exp_id"] = ParamValue{
 					value: ids,
@@ -92,6 +92,25 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 		}
 	}
 
+	if value := c.Query("variables", "###error###"); value != "###error###" && in("variables", whitelist) {
+		variables, ok := itemsToSlice(value)
+		if ok {
+			params["variables"] = ParamValue{
+				value: variables,
+				operator: func(key string, value interface{}, pl *Placeholder) string {
+					variables := value.([]string)
+					var tab []string
+					for i := 0; i < len(variables); i++ {
+						tab = append(tab, pl.Get(variables[i]))
+					}
+					values := fmt.Sprintf("(%s)", strings.Join(tab, ","))
+					return fmt.Sprintf("variable_name IN %s", values)
+				},
+			}
+		} else {
+			return fmt.Errorf("variables not correctly specifed")
+		}
+	}
 	return nil
 }
 
@@ -113,13 +132,14 @@ func in(value string, arr []string) bool {
 	return false
 }
 
-func idsToSlice(ids string) ([]string, bool) {
-	ids, found_prefix := strings.CutPrefix(ids, "[")
-	ids, found_suffix := strings.CutSuffix(ids, "]")
+func itemsToSlice(items string) ([]string, bool) {
+	items, found_prefix := strings.CutPrefix(items, "[")
+	items, found_suffix := strings.CutSuffix(items, "]")
 	if !found_prefix || !found_suffix {
-		log.Default().Println("ids are not specified in the right format", ids)
+		log.Default().Println("items are not specified in the right format", items)
 		return nil, false
 	}
-	res := strings.Split(ids, ",")
+	items = strings.Trim(items, " ")
+	res := strings.Split(items, ",")
 	return res, true
 }
