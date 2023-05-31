@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -26,6 +27,12 @@ func BuildSearchRoutes(app *fiber.App, pool *pgxpool.Pool) {
 	search_routes.Use(cache.New(cache.Config{
 		Expiration:   30 * time.Minute,
 		CacheControl: true,
+		Next: func(c *fiber.Ctx) bool {
+			return c.Query("refresh") == "true"
+		},
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return utils.CopyString(c.Path())
+		},
 	}))
 	search_routes.Get("/looking", func(c *fiber.Ctx) error {
 		return services.QueryExperiment(c, pool)
