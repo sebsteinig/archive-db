@@ -90,7 +90,7 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 			pl = new(utils.Placeholder)
 			pl.Build(0, 10)
 			insert_into_table_exp := fmt.Sprintf("INSERT INTO table_exp "+
-				"(exp_id) VALUES (%s)", pl.Get(request.Request.Experiment.Exp_id))
+				"(exp_id) VALUES (%s) ON CONFLICT DO NOTHING", pl.Get(request.Request.Experiment.Exp_id))
 
 			_, err = tx.Exec(context.Background(), insert_into_table_exp, pl.Args...)
 			pl = new(utils.Placeholder)
@@ -106,7 +106,7 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 					insert_into_table_labels += ","
 				}
 			}
-
+			insert_into_table_labels += "ON CONFLICT (exp_id,labels) DO NOTHING"
 			_, err = tx.Exec(context.Background(), insert_into_table_labels, pl.Args...)
 			return err
 		},
@@ -129,5 +129,35 @@ func Clean(pool *pgxpool.Pool) error {
 		log.Default().Println("transactions error :", err)
 		return err
 	}
+	return nil
+}
+
+func AddLabelsForId(id string, labels []string, pool *pgxpool.Pool) error {
+	if err := pgx.BeginFunc(context.Background(), pool,
+		func(tx pgx.Tx) error {
+			pl := new(utils.Placeholder)
+			pl.Build(0, 10)
+			pl = new(utils.Placeholder)
+			pl.Build(0, len(labels)*2)
+			insert_into_table_labels := "INSERT INTO table_labels " +
+				"(exp_id,labels) VALUES "
+			for i, label := range labels {
+				insert_into_table_labels += fmt.Sprintf("(%s,%s)",
+					pl.Get(id),
+					pl.Get(strings.ToLower(label)),
+				)
+				if i < len(labels)-1 {
+					insert_into_table_labels += ","
+				}
+			}
+			insert_into_table_labels += "ON CONFLICT (exp_id,labels) DO NOTHING"
+			_, err := tx.Exec(context.Background(), insert_into_table_labels, pl.Args...)
+			return err
+		},
+	); err != nil {
+		log.Default().Println("transactions error :", err)
+		return err
+	}
+	log.Default().Println("insert success", id)
 	return nil
 }
