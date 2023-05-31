@@ -58,6 +58,8 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 			log.Default().Println(err)
 			return err
 		}
+		table_experiment := request.Request.ExperimentJSON.ToTable()
+		request.Request.Table_experiment = table_experiment
 		return services.AddVariablesWithExp(id, request, pool)
 	})
 }

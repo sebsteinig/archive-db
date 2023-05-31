@@ -80,7 +80,7 @@ func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, p
 		)
 		
 		SELECT 
-		table_nimbus_execution.exp_id,
+		table_exp.*,
 		created_at,
 		config_name,
 		ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
@@ -91,7 +91,9 @@ func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, p
 			INNER JOIN join_nimbus_execution_variables
 			ON table_nimbus_execution.id = join_nimbus_execution_variables.id_nimbus_execution
 			%s
-			GROUP BY id,table_nimbus_execution.exp_id
+			INNER JOIN table_exp
+			ON table_nimbus_execution.exp_id = table_exp.exp_id
+			GROUP BY id,table_exp.exp_id
 		
 		ORDER BY created_at DESC;
 	`, labels_sql, params_sql)
@@ -103,19 +105,27 @@ func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, p
 	defer rows.Close()
 
 	type Response struct {
-		Created_at          time.Time `json:"created_at"`
-		Config_name         string    `json:"config_name"`
-		Exp_id              string    `json:"exp_id"`
-		Available_variables []string  `json:"available_variables"`
+		Created_at          time.Time              `json:"created_at"`
+		Config_name         string                 `json:"config_name"`
+		Exp_id              string                 `json:"exp_id"`
+		Age                 int                    `json:"age,omitempty"`
+		Metadata            map[string]interface{} `json:"metadata"`
+		Available_variables []string               `json:"available_variables"`
 	}
 	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
 		var res Response
+		var age *int
 		err := row.Scan(
 			&res.Exp_id,
+			&age,
+			&res.Metadata,
 			&res.Created_at,
 			&res.Config_name,
 			&res.Available_variables,
 		)
+		if age != nil {
+			res.Age = *age
+		}
 		if err != nil {
 			log.Default().Println(err)
 		}
@@ -141,7 +151,7 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	sql := fmt.Sprintf(`
 		SELECT 
 		
-		exp_id,
+		table_exp.*,
 		created_at,
 		config_name,
 		ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
@@ -149,7 +159,9 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		FROM table_nimbus_execution 
 		INNER JOIN join_nimbus_execution_variables
 		ON table_nimbus_execution.id = join_nimbus_execution_variables.id_nimbus_execution
-		 AND %s
+		AND %s
+		INNER JOIN table_exp
+		ON table_nimbus_execution.exp_id = table_exp.exp_id
 		GROUP BY id,exp_id
 		ORDER BY created_at DESC;
 	`, params_sql)

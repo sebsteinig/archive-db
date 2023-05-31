@@ -90,19 +90,21 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 			pl = new(utils.Placeholder)
 			pl.Build(0, 10)
 			insert_into_table_exp := fmt.Sprintf("INSERT INTO table_exp "+
-				"(exp_id) VALUES (%s) ON CONFLICT DO NOTHING", pl.Get(request.Request.Experiment.Exp_id))
+				"(exp_id) VALUES (%s) ON CONFLICT DO NOTHING",
+				pl.Get(request.Request.Table_experiment.Exp_id),
+			)
 
 			_, err = tx.Exec(context.Background(), insert_into_table_exp, pl.Args...)
 			pl = new(utils.Placeholder)
-			pl.Build(0, len(request.Request.Experiment.Labels)*2)
+			pl.Build(0, len(request.Request.Table_experiment.Labels)*2)
 			insert_into_table_labels := "INSERT INTO table_labels " +
 				"(exp_id,labels) VALUES "
-			for i, label := range request.Request.Experiment.Labels {
+			for i, label := range request.Request.Table_experiment.Labels {
 				insert_into_table_labels += fmt.Sprintf("(%s,%s)",
-					pl.Get(request.Request.Experiment.Exp_id),
+					pl.Get(request.Request.Table_experiment.Exp_id),
 					pl.Get(strings.ToLower(label)),
 				)
-				if i < len(request.Request.Experiment.Labels)-1 {
+				if i < len(request.Request.Table_experiment.Labels)-1 {
 					insert_into_table_labels += ","
 				}
 			}
