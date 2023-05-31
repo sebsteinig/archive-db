@@ -89,7 +89,7 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 			pl = new(utils.Placeholder)
 			pl.Build(0, 10)
 			insert_into_table_exp := fmt.Sprintf("INSERT INTO table_exp "+
-				"(exp_id,age,metadata) VALUES (%s,0,'{}')", pl.Get(request.Request.Experiment.Exp_id))
+				"(exp_id) VALUES (%s)", pl.Get(request.Request.Experiment.Exp_id))
 
 			_, err = tx.Exec(context.Background(), insert_into_table_exp, pl.Args...)
 
