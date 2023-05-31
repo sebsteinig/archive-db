@@ -69,26 +69,31 @@ func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, p
 	}
 	labels_sql := ""
 	if len(labels_str_array) > 0 {
-		labels_sql = " AND " + strings.Join(labels_str_array, " AND ")
+		labels_sql = "WHERE " + strings.Join(labels_str_array, " AND ")
 	}
 	sql := fmt.Sprintf(`
-		SELECT 
+		WITH valid_exp AS (
+			SELECT exp_id
+			FROM table_labels
+			%s
+		)
 		
+		SELECT 
 		table_nimbus_execution.exp_id,
 		created_at,
 		config_name,
 		ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
-
+		
 		FROM table_nimbus_execution 
-		INNER JOIN join_nimbus_execution_variables
+			INNER JOIN valid_exp
+			ON table_nimbus_execution.exp_id = valid_exp.exp_id
+			INNER JOIN join_nimbus_execution_variables
 			ON table_nimbus_execution.id = join_nimbus_execution_variables.id_nimbus_execution
-		 	%s
-		LEFT JOIN table_labels
-			ON table_nimbus_execution.exp_id = table_labels.exp_id
 			%s
-		GROUP BY id,table_nimbus_execution.exp_id
+			GROUP BY id,table_nimbus_execution.exp_id
+		
 		ORDER BY created_at DESC;
-	`, params_sql, labels_sql)
+	`, labels_sql, params_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {
 		log.Default().Println("Unable to query:", sql, "error :", err)
