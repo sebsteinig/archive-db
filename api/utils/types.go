@@ -8,8 +8,8 @@ import (
 )
 
 type Experiment struct {
-	Exp_id string `json:"exp_id" validate:"required"`
-	Desc   string `json:"desc"`
+	Exp_id string   `json:"exp_id" validate:"required"`
+	Labels []string `json:"labels"`
 }
 
 var validate = validator.New()
@@ -85,6 +85,7 @@ func (variable Variable) Validate() (error, []fiber.Map) {
 type RequestBody struct {
 	Table_nimbus_execution NimbusExecution `json:"table_nimbus_execution"`
 	Table_variable         []Variable      `json:"table_variable"`
+	Experiment             Experiment      `json:"exp_metadata"`
 }
 
 type Request struct {

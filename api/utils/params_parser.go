@@ -9,7 +9,7 @@ import (
 )
 
 type ParamValue struct {
-	value    interface{}
+	Value    interface{}
 	operator func(string, interface{}, *Placeholder) string
 }
 type Params map[string]ParamValue
@@ -20,51 +20,67 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 	}
 	if value := c.Query("config_name", "##error##"); value != "##error##" && in("config_name", whitelist) {
 		params["config_name"] = ParamValue{
-			value:    value,
+			Value:    value,
 			operator: default_operator,
 		}
 	}
 	if value := c.Query("extension", "##error##"); value != "##error##" && in("extension", whitelist) {
 		params["extension"] = ParamValue{
-			value:    value,
+			Value:    value,
 			operator: default_operator,
 		}
 	}
 	if value := c.Query("lossless", "error"); value != "error" && in("lossless", whitelist) {
 		params["lossless"] = ParamValue{
-			value:    c.QueryBool("lossless"),
+			Value:    c.QueryBool("lossless"),
 			operator: default_operator,
 		}
 	}
 	if value := c.Query("threshold", "error"); value != "error" && in("threshold", whitelist) {
 		params["threshold"] = ParamValue{
-			value:    c.QueryFloat("threshold"),
+			Value:    c.QueryFloat("threshold"),
 			operator: default_operator,
 		}
 	}
 	if value := c.Query("rx", "error"); value != "error" && in("rx", whitelist) {
 		params["rx"] = ParamValue{
-			value:    c.QueryFloat("rx"),
+			Value:    c.QueryFloat("rx"),
 			operator: default_operator,
 		}
 	}
 	if value := c.Query("ry", "error"); value != "error" && in("ry", whitelist) {
 		params["ry"] = ParamValue{
-			value:    c.QueryFloat("ry"),
+			Value:    c.QueryFloat("ry"),
 			operator: default_operator,
 		}
 	}
 	if value := c.Query("chunks", "error"); value != "error" && in("chunks", whitelist) {
 		params["chunks"] = ParamValue{
-			value:    c.QueryInt("chunks"),
+			Value:    c.QueryInt("chunks"),
 			operator: default_operator,
 		}
 	}
 	if value := c.Query("like", "##error##"); value != "error" && in("like", whitelist) {
 		params["exp_id"] = ParamValue{
-			value: value,
+			Value: value,
 			operator: func(key string, value interface{}, pl *Placeholder) string {
 				return fmt.Sprintf("%s LIKE %s ||'%%'", key, pl.Get(value))
+			},
+		}
+	}
+	if value := c.Query("for", "##error##"); value != "error" && in("for", whitelist) {
+		params["query"] = ParamValue{
+			Value: strings.Fields(value),
+			operator: func(key string, value interface{}, pl *Placeholder) string {
+				return ""
+			},
+		}
+	}
+	if value := c.Query("with", "##error##"); value != "error" && in("with", whitelist) {
+		params["labels"] = ParamValue{
+			Value: strings.Fields(value),
+			operator: func(key string, value interface{}, pl *Placeholder) string {
+				return ""
 			},
 		}
 	}
@@ -73,7 +89,7 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 			ids, ok := idsToSlice(value)
 			if ok {
 				params["exp_id"] = ParamValue{
-					value: ids,
+					Value: ids,
 					operator: func(key string, value interface{}, pl *Placeholder) string {
 						exp_ids := value.([]string)
 						var tab []string
@@ -99,7 +115,7 @@ func (params Params) ParamToSql(pl *Placeholder) string {
 
 	res := make([]string, 0, len(params))
 	for key, value := range params {
-		res = append(res, fmt.Sprintf("%s", value.operator(key, value.value, pl)))
+		res = append(res, fmt.Sprintf("%s", value.operator(key, value.Value, pl)))
 	}
 	return strings.Join(res, " AND ")
 }

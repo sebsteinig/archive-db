@@ -79,3 +79,18 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS public.join_nimbus_execution_variables
     OWNER to root;
+
+CREATE TABLE IF NOT EXISTS public.table_labels
+(
+    exp_id text COLLATE pg_catalog."default" NOT NULL,
+    labels text COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT table_labels_exp_id_label_key UNIQUE (exp_id, labels),
+    CONSTRAINT table_labels_exp_id_fkey FOREIGN KEY (exp_id)
+        REFERENCES public.table_exp (exp_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+ALTER TABLE IF EXISTS public.table_labels
+    OWNER to root;
