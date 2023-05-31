@@ -92,22 +92,27 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 				"(exp_id) VALUES (%s)", pl.Get(request.Request.Experiment.Exp_id))
 
 			_, err = tx.Exec(context.Background(), insert_into_table_exp, pl.Args...)
-
+			if err != nil {
+				log.Default().Println(err, insert_into_table_exp)
+			}
 			pl = new(utils.Placeholder)
 			pl.Build(0, len(request.Request.Experiment.Labels)*2)
 			insert_into_table_labels := "INSERT INTO table_labels " +
 				"(exp_id,labels) VALUES "
 			for i, label := range request.Request.Experiment.Labels {
-				insert_into_table_variable += fmt.Sprintf("(%s,%s)",
+				insert_into_table_labels += fmt.Sprintf("(%s,%s)",
 					pl.Get(request.Request.Experiment.Exp_id),
 					pl.Get(label),
 				)
 				if i < len(request.Request.Experiment.Labels)-1 {
-					insert_into_table_variable += ","
+					insert_into_table_labels += ","
 				}
 			}
 
 			_, err = tx.Exec(context.Background(), insert_into_table_labels, pl.Args...)
+			if err != nil {
+				log.Default().Println(err, insert_into_table_labels)
+			}
 			return err
 		},
 	); err != nil {
