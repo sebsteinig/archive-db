@@ -35,6 +35,7 @@ func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 			labels
 		FROM table_labels
 		WHERE %s
+		GROUP BY labels
 		`, labels_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {

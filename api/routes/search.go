@@ -31,7 +31,7 @@ func BuildSearchRoutes(app *fiber.App, pool *pgxpool.Pool) {
 			return c.Query("refresh") == "true"
 		},
 		KeyGenerator: func(c *fiber.Ctx) string {
-			return utils.CopyString(c.Path())
+			return utils.CopyString(c.Path() + string(c.Request().URI().QueryString()))
 		},
 	}))
 	search_routes.Get("/looking", func(c *fiber.Ctx) error {
