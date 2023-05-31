@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -92,9 +93,6 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 				"(exp_id) VALUES (%s)", pl.Get(request.Request.Experiment.Exp_id))
 
 			_, err = tx.Exec(context.Background(), insert_into_table_exp, pl.Args...)
-			if err != nil {
-				log.Default().Println(err, insert_into_table_exp)
-			}
 			pl = new(utils.Placeholder)
 			pl.Build(0, len(request.Request.Experiment.Labels)*2)
 			insert_into_table_labels := "INSERT INTO table_labels " +
@@ -102,7 +100,7 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 			for i, label := range request.Request.Experiment.Labels {
 				insert_into_table_labels += fmt.Sprintf("(%s,%s)",
 					pl.Get(request.Request.Experiment.Exp_id),
-					pl.Get(label),
+					pl.Get(strings.ToLower(label)),
 				)
 				if i < len(request.Request.Experiment.Labels)-1 {
 					insert_into_table_labels += ","
@@ -110,9 +108,6 @@ func AddVariablesWithExp(exp_id string, request *utils.Request, pool *pgxpool.Po
 			}
 
 			_, err = tx.Exec(context.Background(), insert_into_table_labels, pl.Args...)
-			if err != nil {
-				log.Default().Println(err, insert_into_table_labels)
-			}
 			return err
 		},
 	); err != nil {

@@ -27,12 +27,12 @@ func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 
 	labels := make([]string, len(queries))
 	for i, q := range queries {
-		labels[i] = fmt.Sprintf("labels LIKE %s || '%%'", pl.Get(q))
+		labels[i] = fmt.Sprintf("labels ILIKE %s || '%%'", pl.Get(q))
 	}
 	labels_sql := strings.Join(labels, " OR ")
 	sql := fmt.Sprintf(`
 		SELECT 
-			labels,
+			labels
 		FROM table_labels
 		WHERE %s
 		`, labels_sql)
@@ -60,16 +60,21 @@ func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, p
 	pl := new(utils.Placeholder)
 	pl.Build(0, 9+len(labels))
 	params_sql := params.ParamToSql(pl)
-
+	if params_sql != "" {
+		params_sql = " AND " + params_sql
+	}
 	labels_str_array := make([]string, len(labels))
 	for i, q := range labels {
-		labels_str_array[i] = fmt.Sprintf("labels = %s", pl.Get(q))
+		labels_str_array[i] = fmt.Sprintf("table_labels.labels = %s", pl.Get(q))
 	}
-	labels_sql := strings.Join(labels_str_array, " AND ")
+	labels_sql := ""
+	if len(labels_str_array) > 0 {
+		labels_sql = " AND " + strings.Join(labels_str_array, " AND ")
+	}
 	sql := fmt.Sprintf(`
 		SELECT 
 		
-		exp_id,
+		table_nimbus_execution.exp_id,
 		created_at,
 		config_name,
 		ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
@@ -77,11 +82,11 @@ func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, p
 		FROM table_nimbus_execution 
 		INNER JOIN join_nimbus_execution_variables
 			ON table_nimbus_execution.id = join_nimbus_execution_variables.id_nimbus_execution
-		 	AND %s
+		 	%s
 		LEFT JOIN table_labels
-			ON table_nimbus_execution.id = table_labels.exp_id
-			AND %s
-		GROUP BY id,exp_id
+			ON table_nimbus_execution.exp_id = table_labels.exp_id
+			%s
+		GROUP BY id,table_nimbus_execution.exp_id
 		ORDER BY created_at DESC;
 	`, params_sql, labels_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)

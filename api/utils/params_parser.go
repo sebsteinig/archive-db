@@ -60,7 +60,7 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 			operator: default_operator,
 		}
 	}
-	if value := c.Query("like", "##error##"); value != "error" && in("like", whitelist) {
+	if value := c.Query("like", "##error##"); value != "##error##" && in("like", whitelist) {
 		params["exp_id"] = ParamValue{
 			Value: value,
 			operator: func(key string, value interface{}, pl *Placeholder) string {
@@ -68,7 +68,7 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 			},
 		}
 	}
-	if value := c.Query("for", "##error##"); value != "error" && in("for", whitelist) {
+	if value := c.Query("for", "##error##"); value != "##error##" && in("for", whitelist) {
 		params["query"] = ParamValue{
 			Value: strings.Fields(value),
 			operator: func(key string, value interface{}, pl *Placeholder) string {
@@ -76,12 +76,15 @@ func (params Params) ParseParams(c *fiber.Ctx, whitelist ...string) error {
 			},
 		}
 	}
-	if value := c.Query("with", "##error##"); value != "error" && in("with", whitelist) {
-		params["labels"] = ParamValue{
-			Value: strings.Fields(value),
-			operator: func(key string, value interface{}, pl *Placeholder) string {
-				return ""
-			},
+	if value := c.Query("with", "##error##"); value != "##error##" && in("with", whitelist) {
+		labels, ok := idsToSlice(value)
+		if ok {
+			params["labels"] = ParamValue{
+				Value: labels,
+				operator: func(key string, value interface{}, pl *Placeholder) string {
+					return ""
+				},
+			}
 		}
 	}
 	if in("ids", whitelist) {
