@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS public.table_variable
 )
 
 TABLESPACE pg_default;
-
 ALTER TABLE IF EXISTS public.table_variable
     OWNER to root;
 
@@ -42,6 +41,7 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS public.table_nimbus_execution
     OWNER to root;
+CREATE INDEX ON table_nimbus_execution (exp_id);
 
 
 CREATE TABLE IF NOT EXISTS public.table_exp
@@ -56,6 +56,7 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS public.table_exp
     OWNER to root;
+CREATE INDEX ON table_exp (exp_id);
 
 CREATE TABLE IF NOT EXISTS public.join_nimbus_execution_variables
 (
@@ -94,3 +95,5 @@ CREATE TABLE IF NOT EXISTS public.table_labels
 TABLESPACE pg_default;
 ALTER TABLE IF EXISTS public.table_labels
     OWNER to root;
+CREATE INDEX ON table_labels (exp_id);
+CREATE INDEX ON table_labels (labels);
