@@ -162,7 +162,7 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		AND %s
 		INNER JOIN table_exp
 		ON table_nimbus_execution.exp_id = table_exp.exp_id
-		GROUP BY id,exp_id
+		GROUP BY id,table_exp.exp_id
 		ORDER BY created_at DESC;
 	`, params_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
@@ -171,21 +171,28 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return err
 	}
 	defer rows.Close()
-
 	type Response struct {
-		Created_at          time.Time `json:"created_at"`
-		Config_name         string    `json:"config_name"`
-		Exp_id              string    `json:"exp_id"`
-		Available_variables []string  `json:"available_variables"`
+		Created_at          time.Time              `json:"created_at"`
+		Config_name         string                 `json:"config_name"`
+		Exp_id              string                 `json:"exp_id"`
+		Age                 int                    `json:"age,omitempty"`
+		Metadata            map[string]interface{} `json:"metadata"`
+		Available_variables []string               `json:"available_variables"`
 	}
 	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
 		var res Response
+		var age *int
 		err := row.Scan(
 			&res.Exp_id,
+			&age,
+			&res.Metadata,
 			&res.Created_at,
 			&res.Config_name,
 			&res.Available_variables,
 		)
+		if age != nil {
+			res.Age = *age
+		}
 		if err != nil {
 			log.Default().Println(err)
 		}
