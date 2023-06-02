@@ -172,7 +172,8 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		}
 		params_sql += " AND " + param_builder.Build(pl)
 	}
-
+	fmt.Println(params_sql)
+	fmt.Println(pl.Args...)
 	sql := fmt.Sprintf(`WITH nimbus_run AS 
 	(
 		SELECT *
@@ -244,6 +245,7 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		&res.Exp_id,
 		&res.Threshold,
 	}, func() error {
+		fmt.Println(res.Exp_id)
 		map_exp[res.Exp_id] = append(map_exp[res.Exp_id], res)
 		return nil
 	})

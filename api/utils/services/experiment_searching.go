@@ -80,6 +80,9 @@ type SearchResponse struct {
 func retrieveQueryResponse(rows pgx.Rows) ([]SearchResponse, error) {
 	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (SearchResponse, error) {
 		var res SearchResponse
+		//for _, column := range row.RawValues() {
+		//	fmt.Println(string(column))
+		//}
 		err := utils.BuildSQLResponse(row, &res)
 		return res, err
 	})
@@ -87,6 +90,7 @@ func retrieveQueryResponse(rows pgx.Rows) ([]SearchResponse, error) {
 }
 
 func searchExperimentWith(defaults_parameters utils.QueryParameters, labels []string, c *fiber.Ctx, pool *pgxpool.Pool) error {
+
 	pl := new(utils.Placeholder)
 	pl.Build(0, 9+len(labels))
 	param_sql := ""
@@ -103,24 +107,26 @@ func searchExperimentWith(defaults_parameters utils.QueryParameters, labels []st
 		}
 		param_sql += " AND " + param_builder.Build(pl)
 	}
+
 	param_builder := utils.OrBuilder{
 		Value: []utils.SqlBuilder{},
 	}
 	for _, label := range labels {
 		param_builder.Or(utils.EqualBuilder{
 			Key:   "table_labels.labels",
-			Value: label,
+			Value: strings.ToLower(label),
 		})
 	}
 	labels_sql := ""
 	if len(param_builder.Value) > 0 {
-		labels_sql = "WHERE " + param_builder.Build(pl)
+		labels_sql += "WHERE " + param_builder.Build(pl)
 	}
 	sql := fmt.Sprintf(`
 		WITH valid_exp AS (
 			SELECT exp_id
 			FROM table_labels
 			%s
+			GROUP BY exp_id
 		)
 		
 		SELECT 
@@ -130,14 +136,14 @@ func searchExperimentWith(defaults_parameters utils.QueryParameters, labels []st
 			ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
 		
 		FROM table_nimbus_execution 
-		
-		INNER JOIN valid_exp
-			ON table_nimbus_execution.exp_id = valid_exp.exp_id
 		INNER JOIN join_nimbus_execution_variables
 			ON table_nimbus_execution.id = join_nimbus_execution_variables.id_nimbus_execution
 			%s
 		INNER JOIN table_exp
 			ON table_nimbus_execution.exp_id = table_exp.exp_id
+		
+		INNER JOIN valid_exp
+			ON table_nimbus_execution.exp_id = valid_exp.exp_id
 		GROUP BY id,table_exp.exp_id
 		ORDER BY created_at DESC;
 	`, labels_sql, param_sql)

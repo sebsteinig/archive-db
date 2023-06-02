@@ -85,7 +85,7 @@ type AndBuilder struct {
 	Value []SqlBuilder
 }
 
-func (builder AndBuilder) And(sqlb SqlBuilder) {
+func (builder *AndBuilder) And(sqlb SqlBuilder) {
 	builder.Value = append(builder.Value, sqlb)
 }
 func (builder AndBuilder) Build(pl *Placeholder) string {
@@ -105,7 +105,7 @@ type OrBuilder struct {
 	Value []SqlBuilder
 }
 
-func (builder OrBuilder) Or(sqlb SqlBuilder) {
+func (builder *OrBuilder) Or(sqlb SqlBuilder) {
 	builder.Value = append(builder.Value, sqlb)
 }
 func (builder OrBuilder) Build(pl *Placeholder) string {
