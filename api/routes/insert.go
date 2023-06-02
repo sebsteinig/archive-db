@@ -55,11 +55,11 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 		request := new(utils.Request)
 		id := c.Params("id")
 		if err := c.BodyParser(request); err != nil {
-			log.Default().Println(err)
+			log.Default().Println("error : ", err)
 			return err
 		}
 		table_experiment := request.Request.ExperimentJSON.ToTable()
 		request.Request.Table_experiment = table_experiment
-		return services.AddVariablesWithExp(id, request, pool)
+		return services.InsertAll(id, request, pool)
 	})
 }

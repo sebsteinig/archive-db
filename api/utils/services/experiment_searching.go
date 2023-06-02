@@ -14,7 +14,7 @@ import (
 )
 
 func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
-	params := make(utils.Params)
+	/*params := make(utils.Params)
 	params.ParseParams(c, "for")
 
 	query, ok := params["query"]
@@ -29,7 +29,24 @@ func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	for i, q := range queries {
 		labels[i] = fmt.Sprintf("labels ILIKE %s || '%%'", pl.Get(q))
 	}
-	labels_sql := strings.Join(labels, " OR ")
+	labels_sql := strings.Join(labels, " OR ")*/
+
+	type Param struct {
+		For string `param:"for"`
+	}
+	param := new(Param)
+	err := utils.BuildQueryParameters(c, param)
+	if err != nil {
+		log.Default().Println("error :", err)
+		return err
+	}
+	pl := new(utils.Placeholder)
+	pl.Build(0, 1)
+	labels_sql := utils.ILikeBuilder{
+		Key:   "labels",
+		Value: param.For,
+	}.Build(pl)
+
 	sql := fmt.Sprintf(`
 		SELECT 
 			labels
@@ -43,12 +60,14 @@ func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return err
 	}
 	defer rows.Close()
-	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (string, error) {
-		var res string
-		err := row.Scan(&res)
-		if err != nil {
-			log.Default().Println(err)
-		}
+
+	type SQLResponse struct {
+		Labels string `sql:"labels" json:"labels"`
+	}
+
+	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (SQLResponse, error) {
+		var res SQLResponse
+		err := utils.BuildSQLResponse(row, &res)
 		return res, err
 	})
 	if err != nil {

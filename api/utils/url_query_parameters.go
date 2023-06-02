@@ -1,0 +1,107 @@
+package utils
+
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+const error_param = "###error###"
+
+func setArray[T any](value string, field reflect.Value) error {
+	a := []T{}
+	err := json.Unmarshal([]byte(value), &a)
+	if err != nil {
+		return err
+	}
+	field.Set(reflect.ValueOf(a))
+	return nil
+}
+func BuildQueryParameters(c *fiber.Ctx, params_struct any) error {
+	elements := reflect.ValueOf(params_struct).Elem()
+
+	for i := 0; i < elements.NumField(); i++ {
+		tag := elements.Type().Field(i).Tag
+		key, ok := tag.Lookup("param")
+		if !ok {
+			continue
+		}
+		required := false
+		if strings.Contains(key, "required") {
+			key = strings.Replace(key, "required", "", -1)
+			required = true
+		}
+		key = strings.Replace(key, ",", "", -1)
+		value := c.Query(key, error_param)
+		if value == error_param && required {
+			return fmt.Errorf("Paramter %s is required", key)
+		}
+		if value != error_param && elements.Field(i).CanSet() {
+			interface_type := elements.Field(i).Interface()
+
+			switch interface_type.(type) {
+			case int:
+				if number, err := strconv.ParseInt(value, 10, 64); err == nil {
+					elements.Field(i).SetInt(number)
+				} else {
+					return fmt.Errorf("Field(%s) must be of type int64", elements.Type().Field(i).Name)
+				}
+			case string:
+				elements.Field(i).SetString(value)
+			case float64:
+				if number, err := strconv.ParseFloat(value, 64); err == nil {
+					elements.Field(i).SetFloat(number)
+				} else {
+					return fmt.Errorf("Field(%s) must be of type float64", elements.Type().Field(i).Name)
+				}
+			case bool:
+				if v, err := strconv.ParseBool(value); err == nil {
+					elements.Field(i).SetBool(v)
+				} else {
+					return fmt.Errorf("Field(%s) must be of type bool", elements.Type().Field(i).Name)
+				}
+			case []string:
+				err := setArray[string](value, elements.Field(i))
+				if err != nil {
+					return err
+				}
+			case []int:
+				err := setArray[int](value, elements.Field(i))
+				if err != nil {
+					return err
+				}
+			case []float32:
+				err := setArray[float32](value, elements.Field(i))
+				if err != nil {
+					return err
+				}
+			case []float64:
+				err := setArray[float64](value, elements.Field(i))
+				if err != nil {
+					return err
+				}
+			case []bool:
+				err := setArray[bool](value, elements.Field(i))
+				if err != nil {
+					return err
+				}
+			case []byte:
+				err := setArray[byte](value, elements.Field(i))
+				if err != nil {
+					return err
+				}
+			case []any:
+				err := setArray[any](value, elements.Field(i))
+				if err != nil {
+					return err
+				}
+
+			}
+		}
+	}
+	return nil
+}
