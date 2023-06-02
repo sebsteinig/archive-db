@@ -29,12 +29,15 @@ func (pl *Placeholder) Get(arg interface{}) string {
 type SqlBuilder interface {
 	Build(pl *Placeholder) string
 }
-type builderualBuilder struct {
+type EqualBuilder struct {
 	Key   string
 	Value any
 }
 
-func (builder builderualBuilder) Build(pl *Placeholder) string {
+func (builder EqualBuilder) Build(pl *Placeholder) string {
+	if reflect.ValueOf(builder.Value).IsZero() {
+		return ""
+	}
 	return fmt.Sprintf("%s = %s", builder.Key, pl.Get(builder.Value))
 }
 
@@ -44,6 +47,9 @@ type LikeBuilder struct {
 }
 
 func (builder LikeBuilder) Build(pl *Placeholder) string {
+	if reflect.ValueOf(builder.Value).IsZero() {
+		return ""
+	}
 	return fmt.Sprintf("%s LIKE %s || '%%'", builder.Key, pl.Get(builder.Value))
 }
 
@@ -53,6 +59,9 @@ type ILikeBuilder struct {
 }
 
 func (builder ILikeBuilder) Build(pl *Placeholder) string {
+	if reflect.ValueOf(builder.Value).IsZero() {
+		return ""
+	}
 	return fmt.Sprintf("%s ILIKE %s || '%%'", builder.Key, pl.Get(builder.Value))
 }
 
@@ -62,6 +71,9 @@ type InBuilder struct {
 }
 
 func (builder InBuilder) Build(pl *Placeholder) string {
+	if reflect.ValueOf(builder.Value).IsZero() {
+		return ""
+	}
 	array := make([]string, len(builder.Value))
 	for i, value := range builder.Value {
 		array[i] = pl.Get(value)
@@ -73,10 +85,18 @@ type AndBuilder struct {
 	Value []SqlBuilder
 }
 
+func (builder AndBuilder) And(sqlb SqlBuilder) {
+	builder.Value = append(builder.Value, sqlb)
+}
 func (builder AndBuilder) Build(pl *Placeholder) string {
-	array := make([]string, len(builder.Value))
-	for i, value := range builder.Value {
-		array[i] = value.Build(pl)
+	if len(builder.Value) == 0 {
+		return ""
+	}
+	array := make([]string, 0, len(builder.Value))
+	for _, value := range builder.Value {
+		if sql := value.Build(pl); sql != "" {
+			array = append(array, sql)
+		}
 	}
 	return fmt.Sprintf("(%s)", strings.Join(array, " AND "))
 }
@@ -85,10 +105,15 @@ type OrBuilder struct {
 	Value []SqlBuilder
 }
 
+func (builder OrBuilder) Or(sqlb SqlBuilder) {
+	builder.Value = append(builder.Value, sqlb)
+}
 func (builder OrBuilder) Build(pl *Placeholder) string {
-	array := make([]string, len(builder.Value))
-	for i, value := range builder.Value {
-		array[i] = value.Build(pl)
+	array := make([]string, 0, len(builder.Value))
+	for _, value := range builder.Value {
+		if sql := value.Build(pl); sql != "" {
+			array = append(array, sql)
+		}
 	}
 	return fmt.Sprintf("(%s)", strings.Join(array, " OR "))
 }

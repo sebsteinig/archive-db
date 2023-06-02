@@ -21,8 +21,13 @@ func setArray[T any](value string, field reflect.Value) error {
 	field.Set(reflect.ValueOf(a))
 	return nil
 }
-func BuildQueryParameters(c *fiber.Ctx, params_struct any) error {
+
+type QueryParameters map[string]any
+
+func BuildQueryParameters(c *fiber.Ctx, params_struct any) (QueryParameters, error) {
 	elements := reflect.ValueOf(params_struct).Elem()
+
+	query_parameters := make(QueryParameters)
 
 	for i := 0; i < elements.NumField(); i++ {
 		tag := elements.Type().Field(i).Tag
@@ -38,7 +43,7 @@ func BuildQueryParameters(c *fiber.Ctx, params_struct any) error {
 		key = strings.Replace(key, ",", "", -1)
 		value := c.Query(key, error_param)
 		if value == error_param && required {
-			return fmt.Errorf("Paramter %s is required", key)
+			return nil, fmt.Errorf("Paramter %s is required", key)
 		}
 		if value != error_param && elements.Field(i).CanSet() {
 			interface_type := elements.Field(i).Interface()
@@ -48,7 +53,7 @@ func BuildQueryParameters(c *fiber.Ctx, params_struct any) error {
 				if number, err := strconv.ParseInt(value, 10, 64); err == nil {
 					elements.Field(i).SetInt(number)
 				} else {
-					return fmt.Errorf("Field(%s) must be of type int64", elements.Type().Field(i).Name)
+					return nil, fmt.Errorf("Field(%s) must be of type int64", elements.Type().Field(i).Name)
 				}
 			case string:
 				elements.Field(i).SetString(value)
@@ -56,52 +61,53 @@ func BuildQueryParameters(c *fiber.Ctx, params_struct any) error {
 				if number, err := strconv.ParseFloat(value, 64); err == nil {
 					elements.Field(i).SetFloat(number)
 				} else {
-					return fmt.Errorf("Field(%s) must be of type float64", elements.Type().Field(i).Name)
+					return nil, fmt.Errorf("Field(%s) must be of type float64", elements.Type().Field(i).Name)
 				}
 			case bool:
 				if v, err := strconv.ParseBool(value); err == nil {
 					elements.Field(i).SetBool(v)
 				} else {
-					return fmt.Errorf("Field(%s) must be of type bool", elements.Type().Field(i).Name)
+					return nil, fmt.Errorf("Field(%s) must be of type bool", elements.Type().Field(i).Name)
 				}
 			case []string:
 				err := setArray[string](value, elements.Field(i))
 				if err != nil {
-					return err
+					return nil, err
 				}
 			case []int:
 				err := setArray[int](value, elements.Field(i))
 				if err != nil {
-					return err
+					return nil, err
 				}
 			case []float32:
 				err := setArray[float32](value, elements.Field(i))
 				if err != nil {
-					return err
+					return nil, err
 				}
 			case []float64:
 				err := setArray[float64](value, elements.Field(i))
 				if err != nil {
-					return err
+					return nil, err
 				}
 			case []bool:
 				err := setArray[bool](value, elements.Field(i))
 				if err != nil {
-					return err
+					return nil, err
 				}
 			case []byte:
 				err := setArray[byte](value, elements.Field(i))
 				if err != nil {
-					return err
+					return nil, err
 				}
 			case []any:
 				err := setArray[any](value, elements.Field(i))
 				if err != nil {
-					return err
+					return nil, err
 				}
 
 			}
+			query_parameters[elements.Type().Field(i).Name] = elements.Field(i).Interface()
 		}
 	}
-	return nil
+	return query_parameters, nil
 }

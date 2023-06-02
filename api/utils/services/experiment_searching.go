@@ -13,29 +13,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type DefaultParameters struct {
+	Config_name        string  `param:"config_name"`
+	Extension          string  `param:"extension" `
+	Lossless           bool    `param:"lossless" `
+	Nan_value_encoding int     `param:"nan_value_encoding" `
+	Threshold          float64 `param:"threshold" `
+	Chunks             int     `param:"chunks"`
+	Rx                 float64 `param:"rx"`
+	Ry                 float64 `param:"ry"`
+}
+
 func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
-	/*params := make(utils.Params)
-	params.ParseParams(c, "for")
-
-	query, ok := params["query"]
-	if !ok {
-		return fmt.Errorf("for clause must be specified when looking")
-	}
-	pl := new(utils.Placeholder)
-	pl.Build(0, 9)
-	queries := query.Value.([]string)
-
-	labels := make([]string, len(queries))
-	for i, q := range queries {
-		labels[i] = fmt.Sprintf("labels ILIKE %s || '%%'", pl.Get(q))
-	}
-	labels_sql := strings.Join(labels, " OR ")*/
-
 	type Param struct {
 		For string `param:"for"`
 	}
 	param := new(Param)
-	err := utils.BuildQueryParameters(c, param)
+	query_parameters, err := utils.BuildQueryParameters(c, param)
 	if err != nil {
 		log.Default().Println("error :", err)
 		return err
@@ -44,7 +38,7 @@ func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	pl.Build(0, 1)
 	labels_sql := utils.ILikeBuilder{
 		Key:   "labels",
-		Value: param.For,
+		Value: query_parameters["For"],
 	}.Build(pl)
 
 	sql := fmt.Sprintf(`
@@ -76,20 +70,51 @@ func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	return c.JSON(responses)
 }
 
-func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, pool *pgxpool.Pool) error {
+type SearchResponse struct {
+	Created_at          time.Time `sql:"created_at" json:"created_at"`
+	Config_name         string    `sql:"config_name" json:"config_name"`
+	Exp_id              string    `sql:"exp_id" json:"exp_id"`
+	Available_variables []string  `sql:"available_variables" json:"available_variables"`
+}
+
+func retrieveQueryResponse(rows pgx.Rows) ([]SearchResponse, error) {
+	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (SearchResponse, error) {
+		var res SearchResponse
+		err := utils.BuildSQLResponse(row, &res)
+		return res, err
+	})
+	return responses, err
+}
+
+func searchExperimentWith(defaults_parameters utils.QueryParameters, labels []string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 	pl := new(utils.Placeholder)
 	pl.Build(0, 9+len(labels))
-	params_sql := params.ParamToSql(pl)
-	if params_sql != "" {
-		params_sql = " AND " + params_sql
+	param_sql := ""
+
+	if len(defaults_parameters) > 0 {
+		param_builder := utils.AndBuilder{
+			Value: []utils.SqlBuilder{},
+		}
+		for key, value := range defaults_parameters {
+			param_builder.And(utils.EqualBuilder{
+				Key:   strings.ToLower(key),
+				Value: value,
+			})
+		}
+		param_sql += " AND " + param_builder.Build(pl)
 	}
-	labels_str_array := make([]string, len(labels))
-	for i, q := range labels {
-		labels_str_array[i] = fmt.Sprintf("table_labels.labels = %s", pl.Get(q))
+	param_builder := utils.OrBuilder{
+		Value: []utils.SqlBuilder{},
+	}
+	for _, label := range labels {
+		param_builder.Or(utils.EqualBuilder{
+			Key:   "table_labels.labels",
+			Value: label,
+		})
 	}
 	labels_sql := ""
-	if len(labels_str_array) > 0 {
-		labels_sql = "WHERE " + strings.Join(labels_str_array, " AND ")
+	if len(param_builder.Value) > 0 {
+		labels_sql = "WHERE " + param_builder.Build(pl)
 	}
 	sql := fmt.Sprintf(`
 		WITH valid_exp AS (
@@ -99,57 +124,30 @@ func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, p
 		)
 		
 		SELECT 
-		table_exp.*,
-		created_at,
-		config_name,
-		ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
+			table_exp.exp_id,
+			created_at,
+			config_name,
+			ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
 		
 		FROM table_nimbus_execution 
-			INNER JOIN valid_exp
+		
+		INNER JOIN valid_exp
 			ON table_nimbus_execution.exp_id = valid_exp.exp_id
-			INNER JOIN join_nimbus_execution_variables
+		INNER JOIN join_nimbus_execution_variables
 			ON table_nimbus_execution.id = join_nimbus_execution_variables.id_nimbus_execution
 			%s
-			INNER JOIN table_exp
+		INNER JOIN table_exp
 			ON table_nimbus_execution.exp_id = table_exp.exp_id
-			GROUP BY id,table_exp.exp_id
-		
+		GROUP BY id,table_exp.exp_id
 		ORDER BY created_at DESC;
-	`, labels_sql, params_sql)
+	`, labels_sql, param_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {
 		log.Default().Println("Unable to query:", sql, "error :", err)
 		return err
 	}
 	defer rows.Close()
-
-	type Response struct {
-		Created_at          time.Time              `json:"created_at"`
-		Config_name         string                 `json:"config_name"`
-		Exp_id              string                 `json:"exp_id"`
-		Age                 int                    `json:"age,omitempty"`
-		Metadata            map[string]interface{} `json:"metadata"`
-		Available_variables []string               `json:"available_variables"`
-	}
-	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
-		var res Response
-		var age *int
-		err := row.Scan(
-			&res.Exp_id,
-			&age,
-			&res.Metadata,
-			&res.Created_at,
-			&res.Config_name,
-			&res.Available_variables,
-		)
-		if age != nil {
-			res.Age = *age
-		}
-		if err != nil {
-			log.Default().Println(err)
-		}
-		return res, err
-	})
+	responses, err := retrieveQueryResponse(rows)
 	if err != nil {
 		return err
 	}
@@ -157,66 +155,77 @@ func searchExperimentWith(params *utils.Params, labels []string, c *fiber.Ctx, p
 }
 
 func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
-	params := make(utils.Params)
-	params.ParseParams(c, "like", "with", "config_name", "extension", "lossless", "threshold", "rx", "ry", "chunks")
-	labels, ok := params["labels"]
-	if ok {
-		return searchExperimentWith(&params, labels.Value.([]string), c, pool)
+
+	default_param := new(DefaultParameters)
+	query_parameters, err := utils.BuildQueryParameters(c, default_param)
+	if err != nil {
+		log.Default().Println("error :", err)
+		return err
+	}
+
+	type LabelsParam struct {
+		Labels []string `param:"with"`
+	}
+	labelsParam := new(LabelsParam)
+	labels_parameters, err := utils.BuildQueryParameters(c, labelsParam)
+	if labels, ok := labels_parameters["Labels"]; ok {
+		return searchExperimentWith(query_parameters, labels.([]string), c, pool)
+	}
+	type LikeParam struct {
+		Like []string `param:"like"`
+	}
+	likeParam := new(LikeParam)
+	like_parameter, err := utils.BuildQueryParameters(c, likeParam)
+	param_sql := ""
+
+	param_builder := utils.AndBuilder{
+		Value: []utils.SqlBuilder{},
+	}
+	if len(query_parameters) > 0 {
+		for key, value := range query_parameters {
+			param_builder.And(utils.EqualBuilder{
+				Key:   strings.ToLower(key),
+				Value: value,
+			})
+		}
+	}
+	if like, ok := like_parameter["Like"]; ok {
+		param_builder.And(utils.EqualBuilder{
+			Key:   "exp_id",
+			Value: like,
+		})
 	}
 	pl := new(utils.Placeholder)
 	pl.Build(0, 9)
-
-	params_sql := params.ParamToSql(pl)
+	if len(param_builder.Value) > 0 {
+		param_sql += " AND " + param_builder.Build(pl)
+	}
 	sql := fmt.Sprintf(`
 		SELECT 
 		
-		table_exp.*,
-		created_at,
-		config_name,
-		ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
+			table_exp.exp_id,
+			created_at,
+			config_name,
+			ARRAY_AGG(join_nimbus_execution_variables.variable_name) as available_variables
 
-		FROM table_nimbus_execution 
+		FROM table_nimbus_execution
+
 		INNER JOIN join_nimbus_execution_variables
-		ON table_nimbus_execution.id = join_nimbus_execution_variables.id_nimbus_execution
-		AND %s
+			ON table_nimbus_execution.id = join_nimbus_execution_variables.id_nimbus_execution
+			%s
 		INNER JOIN table_exp
-		ON table_nimbus_execution.exp_id = table_exp.exp_id
+			ON table_nimbus_execution.exp_id = table_exp.exp_id
+
 		GROUP BY id,table_exp.exp_id
 		ORDER BY created_at DESC;
-	`, params_sql)
+	`, param_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {
 		log.Default().Println("Unable to query:", sql, "error :", err)
 		return err
 	}
 	defer rows.Close()
-	type Response struct {
-		Created_at          time.Time              `json:"created_at"`
-		Config_name         string                 `json:"config_name"`
-		Exp_id              string                 `json:"exp_id"`
-		Age                 int                    `json:"age,omitempty"`
-		Metadata            map[string]interface{} `json:"metadata"`
-		Available_variables []string               `json:"available_variables"`
-	}
-	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
-		var res Response
-		var age *int
-		err := row.Scan(
-			&res.Exp_id,
-			&age,
-			&res.Metadata,
-			&res.Created_at,
-			&res.Config_name,
-			&res.Available_variables,
-		)
-		if age != nil {
-			res.Age = *age
-		}
-		if err != nil {
-			log.Default().Println(err)
-		}
-		return res, err
-	})
+	responses, err := retrieveQueryResponse(rows)
 	if err != nil {
 		return err
 	}

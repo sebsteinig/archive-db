@@ -14,7 +14,7 @@ import (
 func BuildSelectRoutes(app *fiber.App, pool *pgxpool.Pool) {
 
 	select_routes := app.Group("/select")
-	//we add a limiter
+
 	select_routes.Use(limiter.New(limiter.Config{
 		Max:        20,
 		Expiration: 30 * time.Second,
@@ -31,7 +31,7 @@ func BuildSelectRoutes(app *fiber.App, pool *pgxpool.Pool) {
 			return c.Query("refresh") == "true"
 		},
 		KeyGenerator: func(c *fiber.Ctx) string {
-			return utils.CopyString(c.Path())
+			return utils.CopyString(c.Path() + string(c.Request().URI().QueryString()))
 		},
 	}))
 
