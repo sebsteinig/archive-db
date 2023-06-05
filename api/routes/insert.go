@@ -37,15 +37,29 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 	insert_routes.Get("/clean", func(c *fiber.Ctx) error {
 		return services.Clean(pool)
 	})
+	insert_routes.Post("/labels/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		type RequestLabels struct {
+			Labels []string `json:"labels"`
+		}
+		labels := new(RequestLabels)
+		if err := c.BodyParser(labels); err != nil {
+			log.Default().Println(err)
+			return err
+		}
+		return services.AddLabelsForId(id, labels.Labels, pool)
+	})
 	insert_routes.Post("/:id", func(c *fiber.Ctx) error {
 		c.Accepts("application/json")
 
 		request := new(utils.Request)
 		id := c.Params("id")
 		if err := c.BodyParser(request); err != nil {
-			log.Default().Println(err)
+			log.Default().Println("error : ", err)
 			return err
 		}
-		return services.AddVariablesWithExp(id, request, pool)
+		table_experiment := request.Request.ExperimentJSON.ToTable()
+		request.Request.Table_experiment = table_experiment
+		return services.InsertAll(id, request, pool)
 	})
 }

@@ -2,14 +2,44 @@ package utils
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
-type Experiment struct {
-	Exp_id string `json:"exp_id" validate:"required"`
-	Desc   string `json:"desc"`
+type TableExperiment struct {
+	Exp_id   string                 `json:"exp_id"`
+	Labels   []string               `json:"labels"`
+	Co2      float64                `json:"co2"`
+	Metadata map[string]interface{} `json:"metadata"`
+}
+
+type ExperimentJSON struct {
+	Exp_id   string                 `json:"exp_id" validate:"required"`
+	Labels   []string               `json:"labels"`
+	Metadata map[string]interface{} `json:"metadata"`
+}
+
+func (exp ExperimentJSON) ToTable() TableExperiment {
+	table_experiment := TableExperiment{
+		Exp_id: exp.Exp_id,
+		Labels: exp.Labels,
+		//...
+		Metadata: make(map[string]interface{}),
+	}
+	if co2_str, ok := exp.Metadata["co2"]; ok {
+		if co2, err := strconv.ParseFloat(co2_str.(string), 32); err == nil {
+			table_experiment.Co2 = co2
+			delete(exp.Metadata, "co2")
+		}
+	}
+	// delete already used keys
+
+	for k, v := range exp.Metadata {
+		table_experiment.Metadata[k] = v
+	}
+	return table_experiment
 }
 
 var validate = validator.New()
@@ -28,7 +58,7 @@ func validateStruct(obj interface{}) []fiber.Map {
 	return errors
 }
 
-func (exp Experiment) Validate() (error, []fiber.Map) {
+func (exp ExperimentJSON) Validate() (error, []fiber.Map) {
 	errors := validateStruct(exp)
 	if len(errors) > 0 {
 		return fmt.Errorf("experiment validation error"), errors
@@ -85,6 +115,8 @@ func (variable Variable) Validate() (error, []fiber.Map) {
 type RequestBody struct {
 	Table_nimbus_execution NimbusExecution `json:"table_nimbus_execution"`
 	Table_variable         []Variable      `json:"table_variable"`
+	Table_experiment       TableExperiment `json:"-"`
+	ExperimentJSON         ExperimentJSON  `json:"exp_metadata"`
 }
 
 type Request struct {
