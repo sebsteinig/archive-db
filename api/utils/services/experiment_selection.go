@@ -172,8 +172,6 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		}
 		params_sql += " AND " + param_builder.Build(pl)
 	}
-	fmt.Println(params_sql)
-	fmt.Println(pl.Args...)
 	sql := fmt.Sprintf(`WITH nimbus_run AS 
 	(
 		SELECT *
