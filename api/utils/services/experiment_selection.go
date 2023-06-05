@@ -73,6 +73,30 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 		params_sql += " AND " + param_builder.Build(pl)
 	}
 
+	type VariablesParams struct {
+		Variables []string `param:"vars"`
+	}
+	variable_params := new(VariablesParams)
+	_, err_v := utils.BuildQueryParameters(c, variable_params)
+	if err_v != nil {
+		log.Default().Println("error :", err)
+		return err
+	}
+
+	params_vars_sql := ""
+	if len(variable_params.Variables) > 0 {
+		param_builder := utils.OrBuilder{
+			Value: []utils.SqlBuilder{},
+		}
+		for _, value := range variable_params.Variables {
+			param_builder.Or(utils.EqualBuilder{
+				Key:   "variable_name",
+				Value: value,
+			})
+		}
+		params_sql += " AND " + param_builder.Build(pl)
+	}
+
 	sql := fmt.Sprintf(`WITH nimbus_run AS 
 	(
 		SELECT *
@@ -111,7 +135,7 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 			INNER JOIN nimbus_run 
 			ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
 		) AS joined
-	ON table_variable.id = joined.variable_id`, pl.Get(id), params_sql)
+	ON table_variable.id = joined.variable_id %s`, pl.Get(id), params_sql, params_vars_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {
 		log.Default().Println("Unable to query:", sql, "error :", err)
@@ -172,11 +196,36 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		}
 		params_sql += " AND " + param_builder.Build(pl)
 	}
+
+	type VariablesParams struct {
+		Variables []string `param:"vars"`
+	}
+	variable_params := new(VariablesParams)
+	_, err_v := utils.BuildQueryParameters(c, variable_params)
+	if err_v != nil {
+		log.Default().Println("error :", err)
+		return err
+	}
+
+	params_vars_sql := ""
+	if len(variable_params.Variables) > 0 {
+		param_builder := utils.OrBuilder{
+			Value: []utils.SqlBuilder{},
+		}
+		for _, value := range variable_params.Variables {
+			param_builder.Or(utils.EqualBuilder{
+				Key:   "variable_name",
+				Value: value,
+			})
+		}
+		params_sql += " AND " + param_builder.Build(pl)
+	}
+
 	sql := fmt.Sprintf(`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
-		WHERE ` + params_sql + `
+		WHERE `+params_sql+`
 		ORDER BY created_at desc
 	)
 	SELECT 
@@ -209,7 +258,7 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 			INNER JOIN nimbus_run 
 			ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
 		) AS joined
-	ON table_variable.id = joined.variable_id`)
+	ON table_variable.id = joined.variable_id %s`, params_vars_sql)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {
 		fmt.Println(pl.Args...)
