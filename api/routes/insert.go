@@ -43,7 +43,7 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 			log.Default().Println(err)
 			return err
 		}
-		return services.PublicationInsert(request.Publications, pool)
+		return services.PublicationInsert(c, request.Publications, pool)
 	})
 
 	insert_routes.Get("/clean", func(c *fiber.Ctx) error {
