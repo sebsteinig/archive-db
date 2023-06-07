@@ -38,6 +38,9 @@ func BuildSearchRoutes(app *fiber.App, pool *pgxpool.Pool) {
 	search_routes.Get("/looking", func(c *fiber.Ctx) error {
 		return services.QueryExperiment(c, pool)
 	})
+	search_routes.Get("/publication", func(c *fiber.Ctx) error {
+		return services.SearchExperimentForPublication(c, pool)
+	})
 	search_routes.Get("/", func(c *fiber.Ctx) error {
 		return services.SearchExperimentLike(c, pool)
 	})
