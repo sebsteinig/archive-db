@@ -34,8 +34,7 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 		Validator: validateAPIKEY_for(os.Getenv("API_KEY")),
 	}))
 
-	publication_routes := insert_routes.Group("/publication")
-	publication_routes.Post("/multiple", func(c *fiber.Ctx) error {
+	insert_routes.Post("/publication", func(c *fiber.Ctx) error {
 		type Request struct {
 			Publications []services.Publication `json:"publications"`
 		}
@@ -44,19 +43,7 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 			log.Default().Println(err)
 			return err
 		}
-		return services.PublicationInsertMultiple(request.Publications, pool)
-	})
-
-	publication_routes.Post("/single", func(c *fiber.Ctx) error {
-		type Request struct {
-			Publication services.Publication `json:"publication"`
-		}
-		request := new(Request)
-		if err := c.BodyParser(request); err != nil {
-			log.Default().Println(err)
-			return err
-		}
-		return services.PublicationInsertSingle(request.Publication, pool)
+		return services.PublicationInsert(request.Publications, pool)
 	})
 
 	insert_routes.Get("/clean", func(c *fiber.Ctx) error {
