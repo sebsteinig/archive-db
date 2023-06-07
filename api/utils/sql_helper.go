@@ -141,7 +141,7 @@ func BuildSQLInsertAll[T any](table string, array_struct []T, pl *Placeholder) (
 	var fields []string
 	array_values := make([]string, 0, len(array_struct))
 	for _, insert_struct := range array_struct {
-		elements := reflect.ValueOf(insert_struct).Elem()
+		elements := reflect.ValueOf(&insert_struct).Elem()
 		fields = make([]string, 0, elements.NumField())
 		values := make([]string, 0, elements.NumField())
 		for i := 0; i < elements.NumField(); i++ {

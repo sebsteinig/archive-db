@@ -41,7 +41,7 @@ func PublicationInsert(c *fiber.Ctx, publications []Publication, pool *pgxpool.P
 		log.Default().Println("error : ", err)
 		return err
 	}
-	insert_sql += `RETURNING ID`
+	insert_sql += ` RETURNING ID`
 	rows, err_exec := pool.Query(context.Background(), insert_sql, pl.Args...)
 	if err_exec != nil {
 		log.Default().Println("Unable to query:", insert_sql, "error :", err)
@@ -72,7 +72,7 @@ func PublicationInsert(c *fiber.Ctx, publications []Publication, pool *pgxpool.P
 		}
 	}
 	join_sql, err := utils.BuildSQLInsertAll[JoinPublicationExp]("join_publication_exp", joins, pl)
-	join_sql += "RETURNING excluded.exp_id"
+	join_sql += " RETURNING excluded.exp_id"
 	rows, err_exec = pool.Query(context.Background(), join_sql, pl.Args...)
 	if err_exec != nil {
 		log.Default().Println("Unable to query:", insert_sql, "error :", err)
