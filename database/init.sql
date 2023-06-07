@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS public.table_publication
     id serial NOT NULL,
     title text COLLATE pg_catalog."default" NOT NULL,
     authors_short text COLLATE pg_catalog."default" NOT NULL,
-    authors_full text[] COLLATE pg_catalog."default" NOT NULL,
+    authors_full text COLLATE pg_catalog."default" NOT NULL,
     journal text COLLATE pg_catalog."default" NOT NULL,
     year bigint NOT NULL,
     owner_name text COLLATE pg_catalog."default" NOT NULL,
