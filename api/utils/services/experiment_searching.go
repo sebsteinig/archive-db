@@ -237,3 +237,83 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	}
 	return c.JSON(responses)
 }
+
+func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
+	type PublicationParam struct {
+		Title         string `json:"title" sql:"title" param:"title"`
+		Authors_short string `json:"authors_short" sql:"authors_short" param:"authors_short"`
+		//Authors_full  string `json:"authors_full" sql:"authors_full" param:"authors"`
+		Journal      string `json:"journal" sql:"journal" param:"journal"`
+		Owner_name   string `json:"owner_name" sql:"owner_name"`
+		Owner_email  string `json:"owner_email" sql:"owner_email"`
+		Abstract     string `json:"abstract" sql:"abstract"`
+		Brief_desc   string `json:"brief_desc" sql:"brief_desc"`
+		Authors_full string `json:"authors_full" sql:"authors_full"`
+		Year         int    `json:"year" sql:"year"`
+	}
+	publication_param := new(PublicationParam)
+	query_parameters, err := utils.BuildQueryParameters(c, publication_param)
+	if err != nil {
+		log.Default().Println("error :", err)
+		return err
+	}
+	if len(query_parameters) == 0 {
+		return fmt.Errorf("some parameters must be specified")
+	}
+	param_builder := utils.OrBuilder{
+		Value: []utils.SqlBuilder{},
+	}
+	for key, value := range query_parameters {
+		param_builder.Or(utils.ILikeBuilder{
+			Key:   strings.ToLower(key),
+			Value: value,
+		})
+	}
+
+	pl := new(utils.Placeholder)
+	pl.Build(0, len(query_parameters))
+	sql := fmt.Sprintf(`
+		SELECT 
+			ARRAY_AGG(join_publication_exp.exp_id) as exps,
+			table_publication.title,
+			table_publication.journal,
+			table_publication.owner_name,
+			table_publication.owner_email,
+			table_publication.abstract,
+			table_publication.brief_desc,
+			table_publication.year,
+			table_publication.authors_full,
+			table_publication.authors_short,
+		FROM table_publication
+		JOIN join_publication_exp
+		ON %s
+		GROUP BY id,table_exp.exp_id
+	`, param_builder.Build(pl))
+	rows, err := pool.Query(context.Background(), sql, pl.Args...)
+	if err != nil {
+		log.Default().Println("Unable to query:", sql, "error :", err)
+		return err
+	}
+	defer rows.Close()
+	type Response struct {
+		Exps          []string `sql:"exps"`
+		Title         string   `sql:"title"`
+		Journal       string   `sql:"journal"`
+		Owner_name    string   `sql:"owner_name"`
+		Owner_email   string   `sql:"owner_email"`
+		Abstract      string   `sql:"abstract"`
+		Brief_desc    string   `sql:"brief_desc"`
+		Year          int      `sql:"year"`
+		Authors_full  string   `sql:"authors_full"`
+		Authors_short string   `sql:"authors_short"`
+	}
+	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
+		var res Response
+		err := utils.BuildSQLResponse(row, &res)
+		return res, err
+	})
+	if err != nil {
+		return err
+	}
+	return c.JSON(responses)
+}

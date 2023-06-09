@@ -117,6 +117,72 @@ func (builder OrBuilder) Build(pl *Placeholder) string {
 	}
 	return fmt.Sprintf("(%s)", strings.Join(array, " OR "))
 }
+func BuildSQLInsert[T any](table string, insert_struct T, pl *Placeholder) (string, error) {
+	elements := reflect.ValueOf(insert_struct).Elem()
+	fields := make([]string, 0, elements.NumField())
+	values := make([]string, 0, elements.NumField())
+	for i := 0; i < elements.NumField(); i++ {
+		tag := elements.Type().Field(i).Tag
+		key, ok := tag.Lookup("sql")
+		if !ok {
+			continue
+		}
+
+		nullable := false
+		if strings.Contains(key, "nullable") {
+			key = strings.Replace(key, "nullable", "", -1)
+			nullable = true
+		}
+		key = strings.Replace(key, ",", "", -1)
+		if nullable && elements.Field(i).IsZero() {
+			values = append(values, "NULL")
+		} else {
+			values = append(values, pl.Get(elements.Field(i).Interface()))
+		}
+		fields = append(fields, key)
+	}
+	if len(fields) == 0 || len(values) == 0 || len(fields) != len(values) {
+		return "", fmt.Errorf("Invalid struct")
+	}
+	sql := fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s)`, table, strings.Join(fields, ","), strings.Join(values, ","))
+	return sql, nil
+}
+
+func BuildSQLInsertAll[T any](table string, array_struct []T, pl *Placeholder) (string, error) {
+	var fields []string
+	array_values := make([]string, 0, len(array_struct))
+	for _, insert_struct := range array_struct {
+		elements := reflect.ValueOf(&insert_struct).Elem()
+		fields = make([]string, 0, elements.NumField())
+		values := make([]string, 0, elements.NumField())
+		for i := 0; i < elements.NumField(); i++ {
+			tag := elements.Type().Field(i).Tag
+			key, ok := tag.Lookup("sql")
+			if !ok {
+				continue
+			}
+			nullable := false
+			if strings.Contains(key, "nullable") {
+				key = strings.Replace(key, "nullable", "", -1)
+				nullable = true
+			}
+			key = strings.Replace(key, ",", "", -1)
+			if nullable && elements.Field(i).IsZero() {
+				values = append(values, "NULL")
+			} else {
+				values = append(values, pl.Get(elements.Field(i).Interface()))
+			}
+			fields = append(fields, key)
+		}
+		if len(fields) == 0 || len(values) == 0 || len(fields) != len(values) {
+			return "", fmt.Errorf("Invalid struct")
+		}
+		array_values = append(array_values, fmt.Sprintf("(%s)", strings.Join(values, ",")))
+	}
+	sql := fmt.Sprintf(`INSERT INTO %s (%s) VALUES %s`, table, strings.Join(fields, ","), strings.Join(array_values, ","))
+
+	return sql, nil
+}
 
 func BuildSQLResponse(row pgx.CollectableRow, response_struct any) error {
 
