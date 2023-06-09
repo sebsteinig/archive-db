@@ -170,10 +170,7 @@ func BuildSQLInsertAll[T any](table string, array_struct []T, pl *Placeholder) (
 				ignore = true
 			}
 			key = strings.Replace(key, ",", "", -1)
-			if ignore && elements.Field(i).IsZero() {
-				continue
-			}
-			if elements.Field(i).IsZero() {
+			if !ignore && elements.Field(i).IsZero() {
 				values = append(values, "NULL")
 			} else {
 				values = append(values, pl.Get(elements.Field(i).Interface()))
@@ -186,6 +183,7 @@ func BuildSQLInsertAll[T any](table string, array_struct []T, pl *Placeholder) (
 		array_values = append(array_values, fmt.Sprintf("(%s)", strings.Join(values, ",")))
 	}
 	sql := fmt.Sprintf(`INSERT INTO %s (%s) VALUES %s`, table, strings.Join(fields, ","), strings.Join(array_values, ","))
+
 	return sql, nil
 }
 
