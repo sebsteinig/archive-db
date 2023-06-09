@@ -127,7 +127,11 @@ func BuildSQLInsert[T any](table string, insert_struct T, pl *Placeholder) (stri
 		if !ok {
 			continue
 		}
-		values = append(values, pl.Get(elements.Field(i).Interface()))
+		if elements.Field(i).IsZero() {
+			values = append(values, "NULL")
+		} else {
+			values = append(values, pl.Get(elements.Field(i).Interface()))
+		}
 		fields = append(fields, key)
 	}
 	if len(fields) == 0 || len(values) == 0 || len(fields) != len(values) {
@@ -150,7 +154,11 @@ func BuildSQLInsertAll[T any](table string, array_struct []T, pl *Placeholder) (
 			if !ok {
 				continue
 			}
-			values = append(values, pl.Get(elements.Field(i).Interface()))
+			if elements.Field(i).IsZero() {
+				values = append(values, "NULL")
+			} else {
+				values = append(values, pl.Get(elements.Field(i).Interface()))
+			}
 			fields = append(fields, key)
 		}
 		if len(fields) == 0 || len(values) == 0 || len(fields) != len(values) {

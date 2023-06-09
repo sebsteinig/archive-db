@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS public.table_publication
     abstract text COLLATE pg_catalog."default" NOT NULL,
     expts_paper text[] COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT table_publication_pkey PRIMARY KEY (id)
+    CONSTRAINT table_publication_title_journal_year_owner_name_key UNIQUE (title, journal, year, owner_name)
 )
 
 TABLESPACE pg_default;
@@ -127,7 +128,9 @@ ALTER TABLE IF EXISTS public.table_publication
 CREATE TABLE IF NOT EXISTS public.join_publication_exp
 (
     publication_id serial NOT NULL,
-    exp_id text COLLATE pg_catalog."default" NOT NULL,
+    requested_exp_id text COLLATE pg_catalog."default",
+    exp_id text COLLATE pg_catalog."default",
+    CONSTRAINT join_publication_exp_exp_id_publication_id_key UNIQUE (exp_id, publication_id),
     CONSTRAINT join_publication_expid_expid_fkey FOREIGN KEY (exp_id)
         REFERENCES public.table_exp (exp_id) MATCH SIMPLE
         ON UPDATE NO ACTION

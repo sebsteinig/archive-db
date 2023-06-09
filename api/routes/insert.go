@@ -37,13 +37,14 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 	insert_routes.Post("/publication", func(c *fiber.Ctx) error {
 		type Request struct {
 			Publications []services.Publication `json:"publications"`
+			Exp_ids      []string               `json:"exp_ids"`
 		}
 		request := new(Request)
 		if err := c.BodyParser(request); err != nil {
 			log.Default().Println(err)
 			return err
 		}
-		return services.PublicationInsert(c, request.Publications, pool)
+		return services.PublicationInsert(c, request.Exp_ids, request.Publications, pool)
 	})
 
 	insert_routes.Get("/clean", func(c *fiber.Ctx) error {
