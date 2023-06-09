@@ -127,6 +127,16 @@ func BuildSQLInsert[T any](table string, insert_struct T, pl *Placeholder) (stri
 		if !ok {
 			continue
 		}
+
+		ignore := false
+		if strings.Contains(key, "ignore") {
+			key = strings.Replace(key, "ignore", "", -1)
+			ignore = true
+		}
+		key = strings.Replace(key, ",", "", -1)
+		if ignore && elements.Field(i).IsZero() {
+			continue
+		}
 		if elements.Field(i).IsZero() {
 			values = append(values, "NULL")
 		} else {
