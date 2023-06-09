@@ -107,16 +107,16 @@ CREATE INDEX ON table_labels (labels);
 CREATE TABLE IF NOT EXISTS public.table_publication
 (
     id serial NOT NULL,
-    title text COLLATE pg_catalog."default" NOT NULL,
-    authors_short text COLLATE pg_catalog."default" NOT NULL,
-    authors_full text COLLATE pg_catalog."default" NOT NULL,
-    journal text COLLATE pg_catalog."default" NOT NULL,
-    year bigint NOT NULL,
-    owner_name text COLLATE pg_catalog."default" NOT NULL,
-    owner_email text COLLATE pg_catalog."default" NOT NULL,
-    brief_desc text COLLATE pg_catalog."default" NOT NULL,
-    abstract text COLLATE pg_catalog."default" NOT NULL,
-    expts_paper text[] COLLATE pg_catalog."default" NOT NULL,
+    title text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    authors_short text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    authors_full text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    journal text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    year bigint NOT NULL DEFAULT 0,
+    owner_name text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    owner_email text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    brief_desc text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    abstract text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    expts_paper text[] COLLATE pg_catalog."default" NOT NULL DEFAULT '{}'::text[],
     CONSTRAINT table_publication_pkey PRIMARY KEY (id),
     CONSTRAINT table_publication_title_journal_year_owner_name_key UNIQUE (title, journal, year, owner_name)
 )
