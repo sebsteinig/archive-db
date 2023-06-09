@@ -14,18 +14,18 @@ import (
 
 type Publication struct {
 	Title         string `json:"title" sql:"title"`
-	Authors_short string `json:"authors_short" sql:"authors_short,ignore"`
-	Authors_full  string `json:"authors_full" sql:"authors_full,ignore"`
-	Journal       string `json:"journal" sql:"journal,ignore"`
-	Year          int    `json:"year" sql:"year,ignore"`
+	Authors_short string `json:"authors_short" sql:"authors_short"`
+	Authors_full  string `json:"authors_full" sql:"authors_full"`
+	Journal       string `json:"journal" sql:"journal"`
+	Year          int    `json:"year" sql:"year"`
 	//Volume        string `json:"volume" sql:"volume,ignore"`
 	//Pages         int `json:"pages" sql:"pages,ignore"`
 	//Doi           string `json:"doi" sql:"doi,ignore"`
-	Owner_name  string   `json:"owner_name" sql:"owner_name,ignore"`
-	Owner_email string   `json:"owner_email" sql:"owner_email,ignore"`
-	Abstract    string   `json:"abstract" sql:"abstract,ignore"`
-	Brief_desc  string   `json:"brief_desc" sql:"brief_desc,ignore"`
-	Expts_paper []string `json:"expts_paper" sql:"expts_paper,ignore"`
+	Owner_name  string   `json:"owner_name" sql:"owner_name"`
+	Owner_email string   `json:"owner_email" sql:"owner_email"`
+	Abstract    string   `json:"abstract" sql:"abstract"`
+	Brief_desc  string   `json:"brief_desc" sql:"brief_desc"`
+	Expts_paper []string `json:"expts_paper" sql:"expts_paper"`
 	Expts_web   []string `json:"expts_web"`
 }
 
