@@ -160,7 +160,10 @@ func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publicatio
 			invalid_expids[i] = exp_id
 			i++
 		}
-		return c.Status(fiber.StatusConflict).JSON(invalid_expids)
+		type Requested_exp_id struct {
+			Invalid_expids []string `json:"requested_id"`
+		}
+		return c.Status(fiber.StatusConflict).JSON(Requested_exp_id{Invalid_expids: invalid_expids})
 	}
 	return nil
 }
