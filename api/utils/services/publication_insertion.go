@@ -84,8 +84,8 @@ func insertPublication(publications []Publication, ids *[]int, tx pgx.Tx) error 
 	`
 	rows, err_exec := tx.Query(context.Background(), insert_sql, pl.Args...)
 	if err_exec != nil {
-		log.Default().Println("Unable to query:", insert_sql, "error :", err)
-		return err
+		log.Default().Println("Unable to query:", insert_sql, "error :", err_exec)
+		return err_exec
 	}
 	type Id struct {
 		Id int `sql:"id"`
@@ -116,6 +116,9 @@ func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publicatio
 			if err != nil {
 				log.Default().Println("error : ", err)
 				return err
+			}
+			if len(ids) == 0 {
+				return nil
 			}
 			var joins []JoinPublicationExp
 			for i, id := range ids {
