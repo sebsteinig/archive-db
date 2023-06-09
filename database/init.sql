@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.table_publication
     brief_desc text COLLATE pg_catalog."default" NOT NULL,
     abstract text COLLATE pg_catalog."default" NOT NULL,
     expts_paper text[] COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT table_publication_pkey PRIMARY KEY (id)
+    CONSTRAINT table_publication_pkey PRIMARY KEY (id),
     CONSTRAINT table_publication_title_journal_year_owner_name_key UNIQUE (title, journal, year, owner_name)
 )
 
