@@ -31,8 +31,8 @@ type Publication struct {
 
 type JoinPublicationExp struct {
 	PublicationId    int    `sql:"publication_id"`
-	Requested_exp_id string `sql:"requested_exp_id"`
-	Exp_id           string `sql:"exp_id"`
+	Requested_exp_id string `sql:"requested_exp_id,nullable"`
+	Exp_id           string `sql:"exp_id,nullable"`
 }
 
 func selectRequestedIds(exp_ids []string, pool *pgxpool.Pool) (map[string]struct{}, error) {
