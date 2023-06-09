@@ -128,16 +128,13 @@ func BuildSQLInsert[T any](table string, insert_struct T, pl *Placeholder) (stri
 			continue
 		}
 
-		ignore := false
-		if strings.Contains(key, "ignore") {
-			key = strings.Replace(key, "ignore", "", -1)
-			ignore = true
+		nullable := false
+		if strings.Contains(key, "nullable") {
+			key = strings.Replace(key, "nullable", "", -1)
+			nullable = true
 		}
 		key = strings.Replace(key, ",", "", -1)
-		if ignore && elements.Field(i).IsZero() {
-			continue
-		}
-		if elements.Field(i).IsZero() {
+		if nullable && elements.Field(i).IsZero() {
 			values = append(values, "NULL")
 		} else {
 			values = append(values, pl.Get(elements.Field(i).Interface()))
@@ -164,13 +161,13 @@ func BuildSQLInsertAll[T any](table string, array_struct []T, pl *Placeholder) (
 			if !ok {
 				continue
 			}
-			ignore := false
-			if strings.Contains(key, "ignore") {
-				key = strings.Replace(key, "ignore", "", -1)
-				ignore = true
+			nullable := false
+			if strings.Contains(key, "nullable") {
+				key = strings.Replace(key, "nullable", "", -1)
+				nullable = true
 			}
 			key = strings.Replace(key, ",", "", -1)
-			if !ignore && elements.Field(i).IsZero() {
+			if nullable && elements.Field(i).IsZero() {
 				values = append(values, "NULL")
 			} else {
 				values = append(values, pl.Get(elements.Field(i).Interface()))
