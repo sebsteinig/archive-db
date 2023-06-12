@@ -39,15 +39,27 @@ func (exp ExperimentJSON) ToTable() TableExperiment {
 		}
 	}
 	if coast_line_id, ok := exp.Metadata["coast"]; ok {
-		if coast_line_id, err := strconv.ParseInt(coast_line_id.(string), 10, 64); err == nil {
-			table_experiment.Coast_Line_id = coast_line_id
+		switch coast_line_id.(type) {
+		case string:
+			if coast_line_id, err := strconv.ParseInt(coast_line_id.(string), 10, 64); err == nil {
+				table_experiment.Coast_Line_id = coast_line_id
+				delete(exp.Metadata, "coast")
+			}
+		case int64:
+			table_experiment.Coast_Line_id = coast_line_id.(int64)
 			delete(exp.Metadata, "coast")
 		}
 	}
 	if gmst, ok := exp.Metadata["gmst"]; ok {
-		if gmst, err := strconv.ParseFloat(gmst.(string), 64); err == nil {
-			table_experiment.Gmst = gmst
-			delete(exp.Metadata, "gmst")
+		switch gmst.(type) {
+		case string:
+			if gmst, err := strconv.ParseFloat(gmst.(string), 64); err == nil {
+				table_experiment.Gmst = gmst
+				delete(exp.Metadata, "gmst")
+			}
+		case float64:
+			table_experiment.Gmst = gmst.(float64)
+			delete(exp.Metadata, "coast")
 		}
 	}
 	if date_created, ok := exp.Metadata["date_original"]; ok {
@@ -59,8 +71,16 @@ func (exp ExperimentJSON) ToTable() TableExperiment {
 		delete(exp.Metadata, "date_modified")
 	}
 	if realistic, ok := exp.Metadata["realistic"]; ok {
-		table_experiment.Realistic = realistic.(bool)
-		delete(exp.Metadata, "date_modified")
+		switch realistic.(type) {
+		case string:
+			if realistic, err := strconv.ParseBool(realistic.(string)); err == nil {
+				table_experiment.Realistic = realistic
+				delete(exp.Metadata, "gmst")
+			}
+		case bool:
+			table_experiment.Realistic = realistic.(bool)
+			delete(exp.Metadata, "coast")
+		}
 	}
 
 	for k, v := range exp.Metadata {
