@@ -56,6 +56,8 @@ func BuildQueryParameters(c *fiber.Ctx, params_struct any) (QueryParameters, err
 					return nil, fmt.Errorf("Field(%s) must be of type int64", elements.Type().Field(i).Name)
 				}
 			case string:
+				value = strings.TrimPrefix(value, "\"")
+				value = strings.TrimSuffix(value, "\"")
 				elements.Field(i).SetString(value)
 			case float64:
 				if number, err := strconv.ParseFloat(value, 64); err == nil {

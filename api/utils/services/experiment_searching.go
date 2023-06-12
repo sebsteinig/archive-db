@@ -272,6 +272,11 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 
 	pl := new(utils.Placeholder)
 	pl.Build(0, len(query_parameters))
+
+	filters := param_builder.Build(pl)
+	if len(query_parameters) > 0 {
+		filters = " AND " + filters
+	}
 	sql := fmt.Sprintf(`
 		SELECT 
 			ARRAY_AGG(join_publication_exp.exp_id) as exps,
@@ -283,12 +288,12 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 			table_publication.brief_desc,
 			table_publication.year,
 			table_publication.authors_full,
-			table_publication.authors_short,
+			table_publication.authors_short
 		FROM table_publication
 		JOIN join_publication_exp
-		ON %s
-		GROUP BY id,table_exp.exp_id
-	`, param_builder.Build(pl))
+		ON publication_id = table_publication.id %s
+		GROUP BY table_publication.id,table_publication.title
+	`, filters)
 	rows, err := pool.Query(context.Background(), sql, pl.Args...)
 	if err != nil {
 		log.Default().Println("Unable to query:", sql, "error :", err)
@@ -313,6 +318,7 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return res, err
 	})
 	if err != nil {
+		log.Default().Println(err)
 		return err
 	}
 	return c.JSON(responses)
