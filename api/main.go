@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
@@ -27,6 +28,7 @@ func main() {
 		Format: "${time} | [${ip}]:${port} ${status} - ${method} ${path} latency : ${latency}\n\tquery parameters : ${queryParams}\n",
 	}))
 	app.Use(helmet.New())
+	app.Use(recover.New())
 	pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal("Unable to connect to database:", err)

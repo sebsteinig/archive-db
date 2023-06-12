@@ -142,6 +142,10 @@ func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publicatio
 			pl := new(utils.Placeholder)
 			pl.Build(0, len(joins)*2)
 			join_sql, err := utils.BuildSQLInsertAll[JoinPublicationExp]("join_publication_exp", joins, pl)
+			join_sql += `
+				ON CONFLICT (exp_id, publication_id)
+				DO NOTHING
+			`
 			_, err = tx.Exec(context.Background(), join_sql, pl.Args...)
 			if err != nil {
 				log.Default().Println("error : ", err, join_sql)

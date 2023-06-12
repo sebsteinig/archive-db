@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -118,7 +119,7 @@ func (builder OrBuilder) Build(pl *Placeholder) string {
 	return fmt.Sprintf("(%s)", strings.Join(array, " OR "))
 }
 func BuildSQLInsert[T any](table string, insert_struct T, pl *Placeholder) (string, error) {
-	elements := reflect.ValueOf(insert_struct).Elem()
+	elements := reflect.ValueOf(&insert_struct).Elem()
 	fields := make([]string, 0, elements.NumField())
 	values := make([]string, 0, elements.NumField())
 	for i := 0; i < elements.NumField(); i++ {
@@ -137,7 +138,16 @@ func BuildSQLInsert[T any](table string, insert_struct T, pl *Placeholder) (stri
 		if nullable && elements.Field(i).IsZero() {
 			values = append(values, "NULL")
 		} else {
-			values = append(values, pl.Get(elements.Field(i).Interface()))
+			switch elements.Field(i).Interface().(type) {
+			case map[string]interface{}:
+				json, err := json.Marshal(elements.Field(i).Interface())
+				if err != nil {
+					return "", err
+				}
+				values = append(values, pl.Get(json))
+			default:
+				values = append(values, pl.Get(elements.Field(i).Interface()))
+			}
 		}
 		fields = append(fields, key)
 	}
@@ -170,7 +180,16 @@ func BuildSQLInsertAll[T any](table string, array_struct []T, pl *Placeholder) (
 			if nullable && elements.Field(i).IsZero() {
 				values = append(values, "NULL")
 			} else {
-				values = append(values, pl.Get(elements.Field(i).Interface()))
+				switch elements.Field(i).Interface().(type) {
+				case map[string]interface{}:
+					json, err := json.Marshal(elements.Field(i).Interface())
+					if err != nil {
+						return "", err
+					}
+					values = append(values, pl.Get(json))
+				default:
+					values = append(values, pl.Get(elements.Field(i).Interface()))
+				}
 			}
 			fields = append(fields, key)
 		}
