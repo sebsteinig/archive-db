@@ -9,14 +9,14 @@ import (
 )
 
 type TableExperiment struct {
-	Exp_id        string                 `json:"exp_id"`
+	Exp_id        string                 `json:"exp_id" sql:"exp_id"`
 	Labels        []string               `json:"labels"`
-	Co2           float64                `json:"co2"`
+	Co2           float64                `json:"co2" sql:"co2"`
 	Coast_Line_id int64                  `json:"coast_line_id" sql:"coast_line_id"`
 	Gmst          float64                `json:"gmst" sql:"gmst"`
 	Realistic     bool                   `json:"realistic" sql:"realistic"`
-	Date_created  string                 `json:"data_created" sql:"date_created"`
-	Date_updated  string                 `json:"date_updated" sql:"date_updated"`
+	Date_created  string                 `json:"date_created" sql:"date_wp_created"`
+	Date_updated  string                 `json:"date_updated" sql:"date_wp_updated"`
 	Metadata      map[string]interface{} `json:"metadata"`
 }
 

@@ -119,7 +119,7 @@ func (builder OrBuilder) Build(pl *Placeholder) string {
 	return fmt.Sprintf("(%s)", strings.Join(array, " OR "))
 }
 func BuildSQLInsert[T any](table string, insert_struct T, pl *Placeholder) (string, error) {
-	elements := reflect.ValueOf(insert_struct).Elem()
+	elements := reflect.ValueOf(&insert_struct).Elem()
 	fields := make([]string, 0, elements.NumField())
 	values := make([]string, 0, elements.NumField())
 	for i := 0; i < elements.NumField(); i++ {
