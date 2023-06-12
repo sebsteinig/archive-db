@@ -12,7 +12,7 @@ type TableExperiment struct {
 	Exp_id        string                 `json:"exp_id"`
 	Labels        []string               `json:"labels"`
 	Co2           float64                `json:"co2"`
-	Coast_Line_id int                    `json:"coast_line_id" sql:"coast_line_id"`
+	Coast_Line_id int64                  `json:"coast_line_id" sql:"coast_line_id"`
 	Gmst          float64                `json:"gmst" sql:"gmst"`
 	Date_created  string                 `json:"data_created" sql:"date_created"`
 	Date_updated  string                 `json:"date_updated" sql:"date_updated"`
@@ -27,18 +27,36 @@ type ExperimentJSON struct {
 
 func (exp ExperimentJSON) ToTable() TableExperiment {
 	table_experiment := TableExperiment{
-		Exp_id: exp.Exp_id,
-		Labels: exp.Labels,
-		//...
+		Exp_id:   exp.Exp_id,
+		Labels:   exp.Labels,
 		Metadata: make(map[string]interface{}),
 	}
 	if co2_str, ok := exp.Metadata["co2"]; ok {
-		if co2, err := strconv.ParseFloat(co2_str.(string), 32); err == nil {
+		if co2, err := strconv.ParseFloat(co2_str.(string), 64); err == nil {
 			table_experiment.Co2 = co2
 			delete(exp.Metadata, "co2")
 		}
 	}
-	// delete already used keys
+	if coast_line_id, ok := exp.Metadata["coast"]; ok {
+		if coast_line_id, err := strconv.ParseInt(coast_line_id.(string), 10, 64); err == nil {
+			table_experiment.Coast_Line_id = coast_line_id
+			delete(exp.Metadata, "coast")
+		}
+	}
+	if gmst, ok := exp.Metadata["gmst"]; ok {
+		if gmst, err := strconv.ParseFloat(gmst.(string), 64); err == nil {
+			table_experiment.Gmst = gmst
+			delete(exp.Metadata, "gmst")
+		}
+	}
+	if date_created, ok := exp.Metadata["date_original"]; ok {
+		table_experiment.Date_created = date_created.(string)
+		delete(exp.Metadata, "date_original")
+	}
+	if date_updated, ok := exp.Metadata["date_modified"]; ok {
+		table_experiment.Date_updated = date_updated.(string)
+		delete(exp.Metadata, "date_modified")
+	}
 
 	for k, v := range exp.Metadata {
 		table_experiment.Metadata[k] = v
