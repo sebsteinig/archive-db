@@ -14,6 +14,7 @@ type TableExperiment struct {
 	Co2           float64                `json:"co2"`
 	Coast_Line_id int64                  `json:"coast_line_id" sql:"coast_line_id"`
 	Gmst          float64                `json:"gmst" sql:"gmst"`
+	Realistic     bool                   `json:"realistic" sql:"realistic"`
 	Date_created  string                 `json:"data_created" sql:"date_created"`
 	Date_updated  string                 `json:"date_updated" sql:"date_updated"`
 	Metadata      map[string]interface{} `json:"metadata"`
@@ -55,6 +56,10 @@ func (exp ExperimentJSON) ToTable() TableExperiment {
 	}
 	if date_updated, ok := exp.Metadata["date_modified"]; ok {
 		table_experiment.Date_updated = date_updated.(string)
+		delete(exp.Metadata, "date_modified")
+	}
+	if realistic, ok := exp.Metadata["realistic"]; ok {
+		table_experiment.Realistic = realistic.(bool)
 		delete(exp.Metadata, "date_modified")
 	}
 
