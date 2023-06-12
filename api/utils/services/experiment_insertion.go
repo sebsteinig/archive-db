@@ -24,10 +24,16 @@ func insertTableExp(table_exp utils.TableExperiment, tx pgx.Tx) error {
 		DO NOTHING`
 
 	_, err = tx.Exec(context.Background(), insert_into_table_exp, pl.Args...)
+	if err != nil {
+		log.Default().Println("table exp sql :", insert_into_table_exp)
+	}
 	return err
 }
 
 func insertTableLabels(labels []string, exp_id string, tx pgx.Tx) error {
+	if len(labels) == 0 {
+		return nil
+	}
 	pl := new(utils.Placeholder)
 	pl.Build(0, len(labels)*2)
 	insert_into_table_labels := `
@@ -47,6 +53,9 @@ func insertTableLabels(labels []string, exp_id string, tx pgx.Tx) error {
 		ON CONFLICT (exp_id,labels) 
 		DO NOTHING`
 	_, err := tx.Exec(context.Background(), insert_into_table_labels, pl.Args...)
+	if err != nil {
+		log.Default().Println("table labels :", insert_into_table_labels)
+	}
 	return err
 }
 
