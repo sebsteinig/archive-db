@@ -9,10 +9,14 @@ import (
 )
 
 type TableExperiment struct {
-	Exp_id   string                 `json:"exp_id"`
-	Labels   []string               `json:"labels"`
-	Co2      float64                `json:"co2"`
-	Metadata map[string]interface{} `json:"metadata"`
+	Exp_id        string                 `json:"exp_id"`
+	Labels        []string               `json:"labels"`
+	Co2           float64                `json:"co2"`
+	Coast_Line_id int                    `json:"coast_line_id" sql:"coast_line_id"`
+	Gmst          float64                `json:"gmst" sql:"gmst"`
+	Date_created  string                 `json:"data_created" sql:"date_created"`
+	Date_updated  string                 `json:"date_updated" sql:"date_updated"`
+	Metadata      map[string]interface{} `json:"metadata"`
 }
 
 type ExperimentJSON struct {
@@ -68,16 +72,16 @@ func (exp ExperimentJSON) Validate() (error, []fiber.Map) {
 
 type NimbusExecution struct {
 	Id                 int     `json:"id"`
-	Exp_id             string  `json:"exp_id" validate:"required"`
-	Config_name        string  `json:"config_name" validate:"required"`
-	Created_at         string  `json:"created_at"`
-	Extension          string  `json:"extension" validate:"required"`
-	Lossless           bool    `json:"lossless" validate:"required"`
-	Nan_value_encoding int     `json:"nan_value_encoding" validate:"required"`
-	Threshold          float32 `json:"threshold" validate:"required"`
-	Chunks             int     `json:"chunks" validate:"required,gte=0"`
-	Rx                 float64 `json:"rx" validate:""`
-	Ry                 float64 `json:"ry" validate:""`
+	Exp_id             string  `json:"exp_id" validate:"required" sql:"exp_id"`
+	Config_name        string  `json:"config_name" validate:"required" sql:"config_name"`
+	Created_at         string  `json:"created_at" sql:"created_at"`
+	Extension          string  `json:"extension" validate:"required" sql:"extension"`
+	Lossless           bool    `json:"lossless" validate:"required" sql:"lossless"`
+	Nan_value_encoding int     `json:"nan_value_encoding" validate:"required" sql:"nan_value_encoding"`
+	Threshold          float32 `json:"threshold" validate:"required" sql:"threshold"`
+	Chunks             int     `json:"chunks" validate:"required,gte=0" sql:"chunks"`
+	Rx                 float64 `json:"rx" validate:"" sql:"rx"`
+	Ry                 float64 `json:"ry" validate:"" sql:"ry"`
 }
 
 func (exp NimbusExecution) Validate() (error, []fiber.Map) {
@@ -90,18 +94,18 @@ func (exp NimbusExecution) Validate() (error, []fiber.Map) {
 
 type Variable struct {
 	Id         int                    `json:"id"`
-	Name       string                 `json:"name" validate:"required"`
-	Paths_ts   []string               `json:"paths_ts" validate:"required,filepath"`
-	Paths_mean []string               `json:"paths_mean" validate:"required,filepath"`
-	Levels     int                    `json:"levels" validate:"required,gte=0"`
-	Timesteps  int                    `json:"timesteps" validate:"required,gte=0"`
-	Xsize      int                    `json:"xsize" validate:"required,gte=0"`
-	Xfirst     float32                `json:"xfirst" validate:"required"`
-	Xinc       float32                `json:"xinc" validate:"required"`
-	Ysize      int                    `json:"ysize" validate:"required,gte=0"`
-	Yfirst     float32                `json:"yfirst" validate:"required"`
-	Yinc       float32                `json:"yinc" validate:"required"`
-	Metadata   map[string]interface{} `json:"metadata" validate:"required,json"`
+	Name       string                 `json:"name" validate:"required" sql:"name"`
+	Paths_ts   []string               `json:"paths_ts" validate:"required,filepath" sql:"paths_ts"`
+	Paths_mean []string               `json:"paths_mean" validate:"required,filepath" sql:"paths_mean"`
+	Levels     int                    `json:"levels" validate:"required,gte=0" sql:"levels"`
+	Timesteps  int                    `json:"timesteps" validate:"required,gte=0" sql:"timesteps"`
+	Xsize      int                    `json:"xsize" validate:"required,gte=0" sql:"xsize"`
+	Xfirst     float32                `json:"xfirst" validate:"required" sql:"xfirst"`
+	Xinc       float32                `json:"xinc" validate:"required" sql:"xinc"`
+	Ysize      int                    `json:"ysize" validate:"required,gte=0" sql:"ysize"`
+	Yfirst     float32                `json:"yfirst" validate:"required" sql:"yfirst"`
+	Yinc       float32                `json:"yinc" validate:"required" sql:"yinc"`
+	Metadata   map[string]interface{} `json:"metadata" validate:"required,json" sql:"metadata"`
 }
 
 func (variable Variable) Validate() (error, []fiber.Map) {

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -137,7 +138,16 @@ func BuildSQLInsert[T any](table string, insert_struct T, pl *Placeholder) (stri
 		if nullable && elements.Field(i).IsZero() {
 			values = append(values, "NULL")
 		} else {
-			values = append(values, pl.Get(elements.Field(i).Interface()))
+			switch elements.Field(i).Interface().(type) {
+			case map[string]interface{}:
+				json, err := json.Marshal(elements.Field(i).Interface())
+				if err != nil {
+					return "", err
+				}
+				values = append(values, pl.Get(json))
+			default:
+				values = append(values, pl.Get(elements.Field(i).Interface()))
+			}
 		}
 		fields = append(fields, key)
 	}
@@ -170,7 +180,16 @@ func BuildSQLInsertAll[T any](table string, array_struct []T, pl *Placeholder) (
 			if nullable && elements.Field(i).IsZero() {
 				values = append(values, "NULL")
 			} else {
-				values = append(values, pl.Get(elements.Field(i).Interface()))
+				switch elements.Field(i).Interface().(type) {
+				case map[string]interface{}:
+					json, err := json.Marshal(elements.Field(i).Interface())
+					if err != nil {
+						return "", err
+					}
+					values = append(values, pl.Get(json))
+				default:
+					values = append(values, pl.Get(elements.Field(i).Interface()))
+				}
 			}
 			fields = append(fields, key)
 		}
