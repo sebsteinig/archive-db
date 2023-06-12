@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS public.table_variable
 )
 
 TABLESPACE pg_default;
-
 ALTER TABLE IF EXISTS public.table_variable
     OWNER to root;
 
@@ -42,12 +41,18 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS public.table_nimbus_execution
     OWNER to root;
+CREATE INDEX ON table_nimbus_execution (exp_id);
 
 
 CREATE TABLE IF NOT EXISTS public.table_exp
 (
     exp_id text COLLATE pg_catalog."default" NOT NULL,
-    age bigint,
+    co2 real,
+    realistic boolean,
+    coast_line_id bigint,
+    gmst real,
+    date_wp_created date,
+    date_wp_updated date,
     metadata json,
     CONSTRAINT exp_id PRIMARY KEY (exp_id)
 )
@@ -56,6 +61,7 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS public.table_exp
     OWNER to root;
+CREATE INDEX ON table_exp (exp_id);
 
 CREATE TABLE IF NOT EXISTS public.join_nimbus_execution_variables
 (
@@ -79,3 +85,65 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS public.join_nimbus_execution_variables
     OWNER to root;
+
+CREATE TABLE IF NOT EXISTS public.table_labels
+(
+    exp_id text COLLATE pg_catalog."default" NOT NULL,
+    labels text COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT table_labels_exp_id_label_key UNIQUE (exp_id, labels),
+    CONSTRAINT table_labels_exp_id_fkey FOREIGN KEY (exp_id)
+        REFERENCES public.table_exp (exp_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+ALTER TABLE IF EXISTS public.table_labels
+    OWNER to root;
+
+CREATE INDEX ON table_labels (exp_id);
+CREATE INDEX ON table_labels (labels);
+
+CREATE TABLE IF NOT EXISTS public.table_publication
+(
+    id serial NOT NULL,
+    title text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    authors_short text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    authors_full text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    journal text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    year bigint NOT NULL DEFAULT 0,
+    owner_name text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    owner_email text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    brief_desc text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    abstract text COLLATE pg_catalog."default" NOT NULL DEFAULT ''::text,
+    expts_paper text[] COLLATE pg_catalog."default" NOT NULL DEFAULT '{}'::text[],
+    CONSTRAINT table_publication_pkey PRIMARY KEY (id),
+    CONSTRAINT table_publication_title_journal_year_owner_name_key UNIQUE (title, journal, year, owner_name)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.table_publication
+    OWNER to root;
+CREATE TABLE IF NOT EXISTS public.join_publication_exp
+(
+    publication_id serial NOT NULL,
+    requested_exp_id text COLLATE pg_catalog."default",
+    exp_id text COLLATE pg_catalog."default",
+    CONSTRAINT join_publication_exp_exp_id_publication_id_key UNIQUE (exp_id, publication_id),
+    CONSTRAINT join_publication_expid_expid_fkey FOREIGN KEY (exp_id)
+        REFERENCES public.table_exp (exp_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT join_publication_expid_publication_id_fkey FOREIGN KEY (publication_id)
+        REFERENCES public.table_publication (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.join_publication_exp
+    OWNER to root;
+CREATE INDEX ON join_publication_exp (exp_id);
+CREATE INDEX ON join_publication_exp (publication_id);
