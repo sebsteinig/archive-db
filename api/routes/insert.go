@@ -53,7 +53,7 @@ func BuildInsertRoutes(app *fiber.App, pool *pgxpool.Pool) {
 	insert_routes.Post("/labels/:id", func(c *fiber.Ctx) error {
 		id := c.Params("id")
 		type RequestLabels struct {
-			Labels []string `json:"labels"`
+			Labels []utils.Label `json:"labels"`
 		}
 		labels := new(RequestLabels)
 		if err := c.BodyParser(labels); err != nil {

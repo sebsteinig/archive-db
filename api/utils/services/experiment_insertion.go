@@ -3,6 +3,7 @@ package services
 import (
 	"archive-api/utils"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -30,7 +31,7 @@ func insertTableExp(table_exp utils.TableExperiment, tx pgx.Tx) error {
 	return err
 }
 
-func insertTableLabels(labels []string, exp_id string, tx pgx.Tx) error {
+func insertTableLabels(labels []utils.Label, publication_labels []utils.Label, exp_id string, tx pgx.Tx) error {
 	if len(labels) == 0 {
 		return nil
 	}
@@ -38,12 +39,31 @@ func insertTableLabels(labels []string, exp_id string, tx pgx.Tx) error {
 	pl.Build(0, len(labels)*2)
 	insert_into_table_labels := `
 		INSERT INTO table_labels
-			(exp_id,labels) 
+			(exp_id,labels,metadata) 
 		VALUES `
 	for i, label := range labels {
-		insert_into_table_labels += fmt.Sprintf("(%s,%s)",
+		json, err := json.Marshal(label.Metadata)
+		if err != nil {
+			json = []byte("{}")
+		}
+		insert_into_table_labels += fmt.Sprintf("(%s,%s,%s)",
 			pl.Get(exp_id),
-			pl.Get(strings.ToLower(label)),
+			pl.Get(strings.ToLower(label.Label)),
+			pl.Get(json),
+		)
+		if i < len(labels)-1 {
+			insert_into_table_labels += ","
+		}
+	}
+	for i, label := range publication_labels {
+		json, err := json.Marshal(label.Metadata)
+		if err != nil {
+			json = []byte("{}")
+		}
+		insert_into_table_labels += fmt.Sprintf("(%s,%s,%s)",
+			pl.Get(exp_id),
+			pl.Get(strings.ToLower(label.Label)),
+			pl.Get(json),
 		)
 		if i < len(labels)-1 {
 			insert_into_table_labels += ","
@@ -111,7 +131,13 @@ func InsertAll(exp_id string, request *utils.Request, pool *pgxpool.Pool) error 
 				return err
 			}
 
-			err = insertTableLabels(request.Request.Table_experiment.Labels, request.Request.Table_experiment.Exp_id, tx)
+			new_labels, err_u := updatePublicationExp(exp_id, tx)
+			if err_u != nil {
+				log.Default().Println("error : ", err_u)
+				return err_u
+			}
+
+			err = insertTableLabels(request.Request.Table_experiment.Labels, new_labels, request.Request.Table_experiment.Exp_id, tx)
 			if err != nil {
 				log.Default().Println("error : ", err)
 				return err
@@ -123,6 +149,51 @@ func InsertAll(exp_id string, request *utils.Request, pool *pgxpool.Pool) error 
 		return err
 	}
 	return nil
+}
+
+func updatePublicationExp(exp string, tx pgx.Tx) ([]utils.Label, error) {
+	pl := new(utils.Placeholder)
+	pl.Build(0, 2)
+	sql := fmt.Sprintf(`
+		UPDATE join_publication_exp SET requested_exp_id = NULL, exp_id = %s
+		WHERE requested_exp_id = %s
+		RETURNING metadata
+	`, pl.Get(exp), pl.Get(exp))
+	rows, err := tx.Query(context.Background(), sql, pl.Args...)
+	if err != nil {
+		log.Default().Println("Unable to query:", sql, "error :", err)
+		return nil, err
+	}
+	defer rows.Close()
+	type Response struct {
+		Metadata map[string]any `sql:"metadata"`
+	}
+	responses, err_rows := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
+		var res Response
+		err := utils.BuildSQLResponse(row, &res)
+		return res, err
+	})
+	if err_rows != nil {
+		log.Default().Println(err_rows)
+		return nil, err_rows
+	}
+	labels := make([]utils.Label, 0, len(responses))
+	for _, res := range responses {
+		if l, ok := res.Metadata["label"]; ok {
+			l_str := fmt.Sprintf("%s", l)
+			label := utils.Label{
+				Label: l_str,
+			}
+			if m, ok := res.Metadata["metadata"]; ok {
+				switch m.(type) {
+				case map[string]any:
+					label.Metadata = m.(map[string]any)
+				}
+			}
+			labels = append(labels, label)
+		}
+	}
+	return labels, err
 }
 
 func Clean(pool *pgxpool.Pool) error {
@@ -144,10 +215,10 @@ func Clean(pool *pgxpool.Pool) error {
 	return nil
 }
 
-func AddLabelsForId(id string, labels []string, pool *pgxpool.Pool) error {
+func AddLabelsForId(id string, labels []utils.Label, pool *pgxpool.Pool) error {
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
-			err := insertTableLabels(labels, id, tx)
+			err := insertTableLabels(labels, []utils.Label{}, id, tx)
 			if err != nil {
 				log.Default().Println("error : ", err)
 				return err

@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS public.table_labels
 (
     exp_id text COLLATE pg_catalog."default" NOT NULL,
     labels text COLLATE pg_catalog."default" NOT NULL,
+    metadata json NOT NULL DEFAULT '{}'::json,
     CONSTRAINT table_labels_exp_id_label_key UNIQUE (exp_id, labels),
     CONSTRAINT table_labels_exp_id_fkey FOREIGN KEY (exp_id)
         REFERENCES public.table_exp (exp_id) MATCH SIMPLE
@@ -130,6 +131,7 @@ CREATE TABLE IF NOT EXISTS public.join_publication_exp
     publication_id serial NOT NULL,
     requested_exp_id text COLLATE pg_catalog."default",
     exp_id text COLLATE pg_catalog."default",
+    metadata json NOT NULL DEFAULT '{}'::json,
     CONSTRAINT join_publication_exp_exp_id_publication_id_key UNIQUE (exp_id, publication_id),
     CONSTRAINT join_publication_expid_expid_fkey FOREIGN KEY (exp_id)
         REFERENCES public.table_exp (exp_id) MATCH SIMPLE
