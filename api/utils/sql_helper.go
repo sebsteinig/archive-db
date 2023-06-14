@@ -66,6 +66,18 @@ func (builder ILikeBuilder) Build(pl *Placeholder) string {
 	return fmt.Sprintf("%s ILIKE %s || '%%'", builder.Key, pl.Get(builder.Value))
 }
 
+type FullLikeBuilder struct {
+	Key   string
+	Value any
+}
+
+func (builder FullLikeBuilder) Build(pl *Placeholder) string {
+	if reflect.ValueOf(builder.Value).IsZero() {
+		return ""
+	}
+	return fmt.Sprintf("%s ILIKE '%%' || %s || '%%'", builder.Key, pl.Get(builder.Value))
+}
+
 type InBuilder struct {
 	Key   string
 	Value []any
