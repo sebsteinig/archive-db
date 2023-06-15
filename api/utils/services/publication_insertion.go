@@ -12,6 +12,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type Exp_with_Label struct {
+	Exp_id string        `json:"exp_id"`
+	Labels []utils.Label `json:"labels"`
+}
+
 type Publication struct {
 	Title         string `json:"title" sql:"title"`
 	Authors_short string `json:"authors_short" sql:"authors_short"`
@@ -21,18 +26,19 @@ type Publication struct {
 	//Volume        string `json:"volume" sql:"volume,ignore"`
 	//Pages         int `json:"pages" sql:"pages,ignore"`
 	//Doi           string `json:"doi" sql:"doi,ignore"`
-	Owner_name  string   `json:"owner_name" sql:"owner_name"`
-	Owner_email string   `json:"owner_email" sql:"owner_email"`
-	Abstract    string   `json:"abstract" sql:"abstract"`
-	Brief_desc  string   `json:"brief_desc" sql:"brief_desc"`
-	Expts_paper []string `json:"expts_paper" sql:"expts_paper"`
-	Expts_web   []string `json:"expts_web"`
+	Owner_name  string           `json:"owner_name" sql:"owner_name"`
+	Owner_email string           `json:"owner_email" sql:"owner_email"`
+	Abstract    string           `json:"abstract" sql:"abstract"`
+	Brief_desc  string           `json:"brief_desc" sql:"brief_desc"`
+	Expts_paper []string         `json:"expts_paper" sql:"expts_paper"`
+	Expts_web   []Exp_with_Label `json:"expts_web"`
 }
 
 type JoinPublicationExp struct {
-	PublicationId    int    `sql:"publication_id"`
-	Requested_exp_id string `sql:"requested_exp_id,nullable"`
-	Exp_id           string `sql:"exp_id,nullable"`
+	PublicationId    int           `sql:"publication_id"`
+	Requested_exp_id string        `sql:"requested_exp_id,nullable"`
+	Exp_id           string        `sql:"exp_id,nullable"`
+	Metadata         []utils.Label `sql:"metadata"`
 }
 
 func selectRequestedIds(exp_ids []string, pool *pgxpool.Pool) (map[string]struct{}, error) {
@@ -102,6 +108,12 @@ func insertPublication(publications []Publication, ids *[]int, tx pgx.Tx) error 
 	return err
 }
 
+type JoinExpLabel struct {
+	Exp_id   string         `sql:"exp_id"`
+	Label    string         `sql:"labels"`
+	Metadata map[string]any `json:"metadata" sql:"metadata"`
+}
+
 func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publication, pool *pgxpool.Pool) error {
 	requested_ids, err := selectRequestedIds(exp_ids, pool)
 	if err != nil {
@@ -121,24 +133,34 @@ func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publicatio
 				return nil
 			}
 			var joins []JoinPublicationExp
+			var exp_label_joins []JoinExpLabel
 			for i, id := range ids {
 				for _, exp_id := range publications[i].Expts_web {
-					if _, ok := requested_ids[exp_id]; ok {
+					if _, ok := requested_ids[exp_id.Exp_id]; ok {
 						joins = append(joins,
 							JoinPublicationExp{
 								PublicationId:    id,
-								Requested_exp_id: exp_id,
+								Requested_exp_id: exp_id.Exp_id,
+								Metadata:         exp_id.Labels,
 							})
 					} else {
 						joins = append(joins,
 							JoinPublicationExp{
 								PublicationId: id,
-								Exp_id:        exp_id,
+								Exp_id:        exp_id.Exp_id,
+								Metadata:      exp_id.Labels,
 							})
-
+						for _, label := range exp_id.Labels {
+							exp_label_joins = append(exp_label_joins, JoinExpLabel{
+								Exp_id:   exp_id.Exp_id,
+								Label:    label.Label,
+								Metadata: label.Metadata,
+							})
+						}
 					}
 				}
 			}
+
 			pl := new(utils.Placeholder)
 			pl.Build(0, len(joins)*2)
 			join_sql, err := utils.BuildSQLInsertAll[JoinPublicationExp]("join_publication_exp", joins, pl)
@@ -151,6 +173,24 @@ func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publicatio
 				log.Default().Println("error : ", err, join_sql)
 				return err
 			}
+
+			if len(exp_label_joins) > 0 {
+				pl := new(utils.Placeholder)
+				pl.Build(0, len(exp_label_joins)*3)
+				sql, err := utils.BuildSQLInsertAll[JoinExpLabel]("table_labels", exp_label_joins, pl)
+				if err != nil {
+					log.Default().Println("sql :", sql, "error :", err)
+				}
+				sql += `
+				ON CONFLICT (exp_id,labels) 
+				DO NOTHING`
+				_, err = tx.Exec(context.Background(), sql, pl.Args...)
+				if err != nil {
+					log.Default().Println("table labels :", sql, "error :", err)
+					return err
+				}
+			}
+
 			return nil
 		},
 	); err != nil {

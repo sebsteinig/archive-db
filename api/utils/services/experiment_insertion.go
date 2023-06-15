@@ -74,7 +74,7 @@ func insertTableLabels(labels []utils.Label, publication_labels []utils.Label, e
 		DO NOTHING`
 	_, err := tx.Exec(context.Background(), insert_into_table_labels, pl.Args...)
 	if err != nil {
-		log.Default().Println("table labels :", insert_into_table_labels)
+		log.Default().Println("table labels :", insert_into_table_labels, "error :", err)
 	}
 	return err
 }
@@ -179,18 +179,22 @@ func updatePublicationExp(exp string, tx pgx.Tx) ([]utils.Label, error) {
 	}
 	labels := make([]utils.Label, 0, len(responses))
 	for _, res := range responses {
-		if l, ok := res.Metadata["label"]; ok {
-			l_str := fmt.Sprintf("%s", l)
-			label := utils.Label{
-				Label: l_str,
-			}
-			if m, ok := res.Metadata["metadata"]; ok {
-				switch m.(type) {
-				case map[string]any:
-					label.Metadata = m.(map[string]any)
+		if ls, ok := res.Metadata["labels"]; ok {
+			for _, lm := range ls.([]map[string]any) {
+				if l, ok := lm["label"]; ok {
+					l_str := fmt.Sprintf("%s", l)
+					label := utils.Label{
+						Label: l_str,
+					}
+					if m, ok := lm["metadata"]; ok {
+						switch m.(type) {
+						case map[string]any:
+							label.Metadata = m.(map[string]any)
+						}
+					}
+					labels = append(labels, label)
 				}
 			}
-			labels = append(labels, label)
 		}
 	}
 	return labels, err
