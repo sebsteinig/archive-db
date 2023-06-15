@@ -103,7 +103,7 @@ func Insert[T any](table string, values ...T) (SQL_Query, error) {
 	var values_str []string
 	for _, sql_value := range sql_values {
 		var value_str []string
-		for _, _ = range sql_value {
+		for range sql_value {
 			value_str = append(value_str, "%s")
 		}
 		values_str = append(values_str, fmt.Sprintf("(%s)", strings.Join(value_str, ",")))
