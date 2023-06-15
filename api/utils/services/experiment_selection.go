@@ -2,6 +2,7 @@ package services
 
 import (
 	"archive-api/utils"
+	"archive-api/utils/sql"
 	"context"
 	"fmt"
 	"log"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -50,27 +50,22 @@ type SelectDefaultParameters struct {
 }
 
 func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
-	pl := new(utils.Placeholder)
-	pl.Build(0, 8)
-
 	default_param := new(DefaultParameters)
 	query_parameters, err := utils.BuildQueryParameters(c, default_param)
 	if err != nil {
+		log.Default().Println("ERROR <GetExperimentByID>")
 		log.Default().Println("error :", err)
 		return err
 	}
-	params_sql := ""
-	if len(query_parameters) > 0 {
-		param_builder := utils.AndBuilder{
-			Value: []utils.SqlBuilder{},
-		}
-		for key, value := range query_parameters {
-			param_builder.And(utils.EqualBuilder{
-				Key:   strings.ToLower(key),
-				Value: value,
-			})
-		}
-		params_sql += " AND " + param_builder.Build(pl)
+	param_builder := sql.AndBuilder{
+		Value:      []sql.SqlBuilder{},
+		And_Prefix: true,
+	}
+	for key, value := range query_parameters {
+		param_builder.And(sql.EqualBuilder{
+			Key:   strings.ToLower(key),
+			Value: value,
+		})
 	}
 
 	type VariablesParams struct {
@@ -79,25 +74,23 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 	variable_params := new(VariablesParams)
 	_, err_v := utils.BuildQueryParameters(c, variable_params)
 	if err_v != nil {
+		log.Default().Println("ERROR <GetExperimentByID>")
 		log.Default().Println("error :", err)
 		return err
 	}
 
-	params_vars_sql := ""
-	if len(variable_params.Variables) > 0 {
-		param_builder := utils.OrBuilder{
-			Value: []utils.SqlBuilder{},
-		}
-		for _, value := range variable_params.Variables {
-			param_builder.Or(utils.EqualBuilder{
-				Key:   "variable_name",
-				Value: value,
-			})
-		}
-		params_sql += " AND " + param_builder.Build(pl)
+	params_vars_builder := sql.OrBuilder{
+		Value:      []sql.SqlBuilder{},
+		And_Prefix: true,
+	}
+	for _, value := range variable_params.Variables {
+		params_vars_builder.Or(sql.EqualBuilder{
+			Key:   "variable_name",
+			Value: value,
+		})
 	}
 
-	sql := fmt.Sprintf(`WITH nimbus_run AS 
+	query, err := sql.SQLf(`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
@@ -135,18 +128,17 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 			INNER JOIN nimbus_run 
 			ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
 		) AS joined
-	ON table_variable.id = joined.variable_id %s`, pl.Get(id), params_sql, params_vars_sql)
-	rows, err := pool.Query(context.Background(), sql, pl.Args...)
+	ON table_variable.id = joined.variable_id %s`, id, param_builder, params_vars_builder)
+
 	if err != nil {
-		log.Default().Println("Unable to query:", sql, "error :", err)
+		log.Default().Println("ERROR <GetExperimentByID>")
 		return err
 	}
-	defer rows.Close()
-	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
-		var res Response
-		err := utils.BuildSQLResponse(row, &res)
-		return res, err
-	})
+	responses, err := sql.Receive[Response](context.Background(), &query, pool)
+	if err != nil {
+		log.Default().Println("ERROR <GetExperimentByID>")
+		return err
+	}
 	return c.JSON(responses)
 }
 func toAnyList[T any](input []T) []any {
@@ -157,17 +149,13 @@ func toAnyList[T any](input []T) []any {
 	return list
 }
 func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
-
-	pl := new(utils.Placeholder)
-	pl.Build(0, 8)
-
 	default_param := new(DefaultParameters)
 	query_parameters, err := utils.BuildQueryParameters(c, default_param)
 	if err != nil {
+		log.Default().Println("ERROR <GetExperimentsByIDs>")
 		log.Default().Println("error :", err)
 		return err
 	}
-	params_sql := ""
 
 	type Ids struct {
 		Ids []string `param:"ids,required"`
@@ -175,26 +163,25 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	ids_param := new(Ids)
 	_, err = utils.BuildQueryParameters(c, ids_param)
 	if err != nil {
+		log.Default().Println("ERROR <GetExperimentsByIDs>")
 		log.Default().Println("error :", err)
 		return err
 	}
 
-	params_sql += utils.InBuilder{
+	in_builder := sql.InBuilder{
 		Key:   "exp_id",
 		Value: toAnyList(ids_param.Ids),
-	}.Build(pl)
+	}
 
-	if len(query_parameters) > 0 {
-		param_builder := utils.AndBuilder{
-			Value: []utils.SqlBuilder{},
-		}
-		for key, value := range query_parameters {
-			param_builder.And(utils.EqualBuilder{
-				Key:   strings.ToLower(key),
-				Value: value,
-			})
-		}
-		params_sql += " AND " + param_builder.Build(pl)
+	param_builder := sql.AndBuilder{
+		Value:      []sql.SqlBuilder{},
+		And_Prefix: true,
+	}
+	for key, value := range query_parameters {
+		param_builder.And(sql.EqualBuilder{
+			Key:   strings.ToLower(key),
+			Value: value,
+		})
 	}
 
 	type VariablesParams struct {
@@ -203,29 +190,27 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	variable_params := new(VariablesParams)
 	_, err_v := utils.BuildQueryParameters(c, variable_params)
 	if err_v != nil {
+		log.Default().Println("ERROR <GetExperimentsByIDs>")
 		log.Default().Println("error :", err)
 		return err
 	}
 
-	params_vars_sql := ""
-	if len(variable_params.Variables) > 0 {
-		param_builder := utils.OrBuilder{
-			Value: []utils.SqlBuilder{},
-		}
-		for _, value := range variable_params.Variables {
-			param_builder.Or(utils.EqualBuilder{
-				Key:   "variable_name",
-				Value: value,
-			})
-		}
-		params_sql += " AND " + param_builder.Build(pl)
+	params_vars_builder := sql.OrBuilder{
+		Value:      []sql.SqlBuilder{},
+		And_Prefix: true,
+	}
+	for _, value := range variable_params.Variables {
+		params_vars_builder.Or(sql.EqualBuilder{
+			Key:   "variable_name",
+			Value: value,
+		})
 	}
 
-	sql := fmt.Sprintf(`WITH nimbus_run AS 
+	query, err := sql.SQLf(`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
-		WHERE `+params_sql+`
+		WHERE %s %s
 		ORDER BY created_at desc
 	)
 	SELECT 
@@ -258,47 +243,23 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 			INNER JOIN nimbus_run 
 			ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
 		) AS joined
-	ON table_variable.id = joined.variable_id %s`, params_vars_sql)
-	rows, err := pool.Query(context.Background(), sql, pl.Args...)
+	ON table_variable.id = joined.variable_id %s`, in_builder, param_builder, params_vars_builder)
 	if err != nil {
-		fmt.Println(pl.Args...)
-		log.Default().Println("Unable to query:", sql, "error :", err)
+		log.Default().Println("ERROR <GetExperimentsByIDs>")
 		return err
 	}
-	defer rows.Close()
+	responses, err := sql.Receive[Response](context.Background(), &query, pool)
+	if err != nil {
+		log.Default().Println("ERROR <GetExperimentsByIDs>")
+		return err
+	}
+
 	var map_exp map[string][]Response = make(map[string][]Response)
-	var res Response
-	_, err_map := pgx.ForEachRow(rows, []any{
-		&res.VariableName,
-		&res.Path_ts,
-		&res.Path_mean,
-		&res.Levels,
-		&res.Timesteps,
-		&res.Xsize,
-		&res.Xfirst,
-		&res.Yinc,
-		&res.Ysize,
-		&res.Yfirst,
-		&res.Xinc,
-		&res.Metadata,
-		&res.Created_at,
-		&res.Config_name,
-		&res.Extension,
-		&res.Lossless,
-		&res.Nan_value_encoding,
-		&res.Chunks,
-		&res.Rx,
-		&res.Ry,
-		&res.Exp_id,
-		&res.Threshold,
-	}, func() error {
-		fmt.Println(res.Exp_id)
+	for _, res := range responses {
 		map_exp[res.Exp_id] = append(map_exp[res.Exp_id], res)
-		return nil
-	})
-	if err_map != nil {
-		log.Default().Println("map failed, error :", err_map)
-		return err_map
+	}
+	if len(responses) > 0 && len(map_exp) == 0 {
+		return fmt.Errorf("ERROR :: something went wrong when mapping result")
 	}
 	return c.JSON(map_exp)
 }
