@@ -2,6 +2,7 @@ package services
 
 import (
 	"archive-api/utils"
+	"archive-api/utils/sql"
 	"context"
 	"fmt"
 	"log"
@@ -26,12 +27,12 @@ type Publication struct {
 	//Volume        string `json:"volume" sql:"volume,ignore"`
 	//Pages         int `json:"pages" sql:"pages,ignore"`
 	//Doi           string `json:"doi" sql:"doi,ignore"`
-	Owner_name  string           `json:"owner_name" sql:"owner_name"`
-	Owner_email string           `json:"owner_email" sql:"owner_email"`
-	Abstract    string           `json:"abstract" sql:"abstract"`
-	Brief_desc  string           `json:"brief_desc" sql:"brief_desc"`
-	Expts_paper []string         `json:"expts_paper" sql:"expts_paper"`
-	Expts_web   []Exp_with_Label `json:"expts_web"`
+	Owner_name  string `json:"owner_name" sql:"owner_name"`
+	Owner_email string `json:"owner_email" sql:"owner_email"`
+	Abstract    string `json:"abstract" sql:"abstract"`
+	Brief_desc  string `json:"brief_desc" sql:"brief_desc"`
+	//Expts_paper []string         `json:"expts_paper" sql:"expts_paper"`
+	Expts_web []Exp_with_Label `json:"expts_web"`
 }
 
 type JoinPublicationExp struct {
@@ -40,18 +41,12 @@ type JoinPublicationExp struct {
 	Exp_id           string        `sql:"exp_id,nullable"`
 	Metadata         []utils.Label `sql:"metadata"`
 }
-type JoinExpLabel struct {
-	Exp_id   string         `sql:"exp_id"`
-	Label    string         `sql:"labels"`
-	Metadata map[string]any `json:"metadata" sql:"metadata"`
-}
 
 func selectRequestedIds(exp_ids []string, pool *pgxpool.Pool) (map[string]struct{}, error) {
-	pl := new(utils.Placeholder)
-	pl.Build(0, len(exp_ids))
+	pl := sql.BuildPlaceholder(len(exp_ids))
 	values_exp_ids := make([]string, len(exp_ids))
 	for i, exp_id := range exp_ids {
-		values_exp_ids[i] = fmt.Sprintf("(%s)", pl.Get(exp_id))
+		values_exp_ids[i] = fmt.Sprintf("(%s)", pl.Push(exp_id))
 	}
 	select_requested_ids_sql := fmt.Sprintf(`
 		select exp_id as requested_exp_id
@@ -82,32 +77,25 @@ type Id struct {
 }
 
 func insertPublication(publications []Publication, ids *[]int, tx pgx.Tx) error {
-	pl := new(utils.Placeholder)
-	pl.Build(0, len(publications)*14)
-	insert_sql, err := utils.BuildSQLInsertAll[Publication]("table_publication", publications, pl)
+
+	query, err := sql.Insert[Publication]("table_publication", publications...)
 	if err != nil {
-		log.Default().Println("error : ", err)
+		log.Default().Println("ERROR <insertPublication>")
 		return err
 	}
-	insert_sql += ` 
+	query.Suffixe(` 
 		ON CONFLICT (title, journal, year, owner_name) DO NOTHING
 		RETURNING id
-	`
-	rows, err_exec := tx.Query(context.Background(), insert_sql, pl.Args...)
-	if err_exec != nil {
-		log.Default().Println("Unable to query:", insert_sql, "error :", err_exec)
-		return err_exec
-	}
+	`)
 	type Id struct {
 		Id int `sql:"id"`
 	}
-	defer rows.Close()
-	_ids, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Id, error) {
-		var res Id
-		err := utils.BuildSQLResponse(row, &res)
-		return res, err
-	})
-	for _, id := range _ids {
+	responses, err := sql.Receive[Id](context.Background(), &query, tx)
+	if err != nil {
+		log.Default().Println("ERROR <SearchExperimentLike>")
+		return err
+	}
+	for _, id := range responses {
 		*ids = append(*ids, id.Id)
 	}
 	return err
@@ -132,7 +120,7 @@ func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publicatio
 				return nil
 			}
 			var joins []JoinPublicationExp
-			var exp_label_joins []JoinExpLabel
+			var exp_label_joins []utils.JoinExpLabel
 			for i, id := range ids {
 				for _, exp_id := range publications[i].Expts_web {
 					if _, ok := requested_ids[exp_id.Exp_id]; ok {
@@ -150,7 +138,7 @@ func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publicatio
 								Metadata:      exp_id.Labels,
 							})
 						for _, label := range exp_id.Labels {
-							exp_label_joins = append(exp_label_joins, JoinExpLabel{
+							exp_label_joins = append(exp_label_joins, utils.JoinExpLabel{
 								Exp_id:   exp_id.Exp_id,
 								Label:    label.Label,
 								Metadata: label.Metadata,
@@ -160,32 +148,34 @@ func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publicatio
 				}
 			}
 
-			pl := new(utils.Placeholder)
-			pl.Build(0, len(joins)*2)
-			join_sql, err := utils.BuildSQLInsertAll[JoinPublicationExp]("join_publication_exp", joins, pl)
-			join_sql += `
+			query, err := sql.Insert[JoinPublicationExp]("join_publication_exp", joins...)
+			query.Suffixe(`
 				ON CONFLICT (exp_id, publication_id)
 				DO NOTHING
-			`
-			_, err = tx.Exec(context.Background(), join_sql, pl.Args...)
+			`)
 			if err != nil {
-				log.Default().Println("error : ", err, join_sql)
+				log.Default().Println("ERROR <PublicationInsert>")
+				return err
+			}
+			err = sql.Exec(context.Background(), &query, tx)
+			if err != nil {
+				log.Default().Println("ERROR <PublicationInsert>")
 				return err
 			}
 
 			if len(exp_label_joins) > 0 {
-				pl := new(utils.Placeholder)
-				pl.Build(0, len(exp_label_joins)*3)
-				sql, err := utils.BuildSQLInsertAll[JoinExpLabel]("table_labels", exp_label_joins, pl)
+				query, err := sql.Insert[utils.JoinExpLabel]("table_labels", exp_label_joins...)
+				query.Suffixe(`
+					ON CONFLICT (exp_id,labels) 
+					DO NOTHING
+				`)
 				if err != nil {
-					log.Default().Println("sql :", sql, "error :", err)
+					log.Default().Println("ERROR <PublicationInsert>")
+					return err
 				}
-				sql += `
-				ON CONFLICT (exp_id,labels) 
-				DO NOTHING`
-				_, err = tx.Exec(context.Background(), sql, pl.Args...)
+				err = sql.Exec(context.Background(), &query, tx)
 				if err != nil {
-					log.Default().Println("table labels :", sql, "error :", err)
+					log.Default().Println("ERROR <PublicationInsert>")
 					return err
 				}
 			}

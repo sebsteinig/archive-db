@@ -1,14 +1,6 @@
 package utils
 
-import (
-	"encoding/json"
-	"fmt"
-	"reflect"
-	"strings"
-
-	"github.com/jackc/pgx/v5"
-)
-
+/*
 type Placeholder struct {
 	idx  int
 	Args []interface{}
@@ -237,3 +229,4 @@ func BuildSQLResponse(row pgx.CollectableRow, response_struct any) error {
 	err := row.Scan(pointers...)
 	return err
 }
+*/

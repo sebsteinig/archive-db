@@ -21,7 +21,12 @@ type TableExperiment struct {
 }
 
 type Label struct {
-	Label    string         `json:"labels" sql:"labels"`
+	Label    string         `json:"label" sql:"labels"`
+	Metadata map[string]any `json:"metadata" sql:"metadata"`
+}
+type JoinExpLabel struct {
+	Exp_id   string         `sql:"exp_id"`
+	Label    string         `sql:"labels"`
 	Metadata map[string]any `json:"metadata" sql:"metadata"`
 }
 type ExperimentJSON struct {
