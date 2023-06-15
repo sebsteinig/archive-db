@@ -40,6 +40,11 @@ type JoinPublicationExp struct {
 	Exp_id           string        `sql:"exp_id,nullable"`
 	Metadata         []utils.Label `sql:"metadata"`
 }
+type JoinExpLabel struct {
+	Exp_id   string         `sql:"exp_id"`
+	Label    string         `sql:"labels"`
+	Metadata map[string]any `json:"metadata" sql:"metadata"`
+}
 
 func selectRequestedIds(exp_ids []string, pool *pgxpool.Pool) (map[string]struct{}, error) {
 	pl := new(utils.Placeholder)
@@ -106,12 +111,6 @@ func insertPublication(publications []Publication, ids *[]int, tx pgx.Tx) error 
 		*ids = append(*ids, id.Id)
 	}
 	return err
-}
-
-type JoinExpLabel struct {
-	Exp_id   string         `sql:"exp_id"`
-	Label    string         `sql:"labels"`
-	Metadata map[string]any `json:"metadata" sql:"metadata"`
 }
 
 func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publication, pool *pgxpool.Pool) error {
