@@ -61,7 +61,7 @@ func (sql *SQL_Query) format() {
 					values_str = append(values_str, sql.holder.Push(value.Value))
 				}
 			}
-			pushed_args = append(pushed_args, fmt.Sprintf("(%s)", strings.Join(values_str, ",")))
+			pushed_args = append(pushed_args, to_any_list(values_str)...)
 		} else {
 			pushed_args = append(pushed_args, sql.holder.Push(arg))
 		}
@@ -100,6 +100,15 @@ func Insert[T any](table string, values ...T) (SQL_Query, error) {
 	insert_sql := fmt.Sprintf(`INSERT INTO %s (%s) VALUES `,
 		table, strings.Join(column_names, ","))
 
+	var values_str []string
+	for _, sql_value := range sql_values {
+		var value_str []string
+		for _, _ = range sql_value {
+			value_str = append(value_str, "%s")
+		}
+		values_str = append(values_str, fmt.Sprintf("(%s)", strings.Join(value_str, ",")))
+	}
+	insert_sql += strings.Join(values_str, ",")
 	sql_query, sql_error := SQLf(insert_sql, to_any_list[[]SQL_Value](sql_values)...)
 
 	return sql_query, sql_error
@@ -137,6 +146,9 @@ func Receive[T any](ctx context.Context, sql *SQL_Query, runner SQL_Runner) ([]T
 func ReceiveRows(ctx context.Context, sql *SQL_Query, runner SQL_Runner) (pgx.Rows, error) {
 	sql.format()
 	rows, err := runner.Query(ctx, sql.query, sql.holder.Args...)
+	if err != nil {
+		log.Default().Println("ERROR ::", err, "\nON SQL :", sql.query)
+	}
 	return rows, err
 }
 func BuildSQLResponse(row pgx.CollectableRow, response_struct any, order map[string]int) error {

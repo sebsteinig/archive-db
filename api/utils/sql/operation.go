@@ -183,6 +183,9 @@ func (builder *OrBuilder) OrAll(builders ...SqlBuilder) {
 }
 
 func (builder OrBuilder) Build(pl *Placeholder) string {
+	if len(builder.Value) == 0 {
+		return ""
+	}
 	array := make([]string, 0, len(builder.Value))
 	for _, value := range builder.Value {
 		if sql := value.Build(pl); sql != "" {

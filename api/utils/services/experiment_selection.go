@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -249,47 +248,18 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		log.Default().Println("ERROR <GetExperimentsByIDs>")
 		return err
 	}
-
-	rows, err := sql.ReceiveRows(context.Background(), &query, pool)
+	responses, err := sql.Receive[Response](context.Background(), &query, pool)
 	if err != nil {
 		log.Default().Println("ERROR <GetExperimentsByIDs>")
 		return err
 	}
-	defer rows.Close()
+
 	var map_exp map[string][]Response = make(map[string][]Response)
-	var res Response
-	_, err_map := pgx.ForEachRow(rows, []any{
-		&res.VariableName,
-		&res.Path_ts,
-		&res.Path_mean,
-		&res.Levels,
-		&res.Timesteps,
-		&res.Xsize,
-		&res.Xfirst,
-		&res.Yinc,
-		&res.Ysize,
-		&res.Yfirst,
-		&res.Xinc,
-		&res.Metadata,
-		&res.Created_at,
-		&res.Config_name,
-		&res.Extension,
-		&res.Lossless,
-		&res.Nan_value_encoding,
-		&res.Chunks,
-		&res.Rx,
-		&res.Ry,
-		&res.Exp_id,
-		&res.Threshold,
-	}, func() error {
-		fmt.Println(res.Exp_id)
+	for _, res := range responses {
 		map_exp[res.Exp_id] = append(map_exp[res.Exp_id], res)
-		return nil
-	})
-	if err_map != nil {
-		log.Default().Println("ERROR <GetExperimentsByIDs>")
-		log.Default().Println("map failed, error :", err_map)
-		return err_map
+	}
+	if len(responses) > 0 && len(map_exp) == 0 {
+		return fmt.Errorf("ERROR :: something went wrong when mapping result")
 	}
 	return c.JSON(map_exp)
 }

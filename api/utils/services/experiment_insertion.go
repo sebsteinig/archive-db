@@ -121,7 +121,6 @@ func InsertAll(exp_id string, request *utils.Request, pool *pgxpool.Pool) error 
 				log.Default().Println("ERROR <InsertAll>")
 				return err_u
 			}
-			log.Default().Println("PUBLICATION_LABELS", publication_labels)
 			err = insertTableLabels(request.Request.Table_experiment.Labels, publication_labels, request.Request.Table_experiment.Exp_id, tx)
 			if err != nil {
 				log.Default().Println("ERROR <InsertAll>")
