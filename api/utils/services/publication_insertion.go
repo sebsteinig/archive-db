@@ -101,6 +101,9 @@ func insertPublication(publications []Publication, ids *[]int, tx pgx.Tx) error 
 	return err
 }
 
+// @Description insert a publication in the database
+// @Summary private route
+// @Router /insert/publication [post]
 func PublicationInsert(c *fiber.Ctx, exp_ids []string, publications []Publication, pool *pgxpool.Pool) error {
 	requested_ids, err := selectRequestedIds(exp_ids, pool)
 	if err != nil {

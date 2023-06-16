@@ -24,6 +24,10 @@ type DefaultParameters struct {
 	Ry                 float64 `param:"ry"`
 }
 
+// @Description search for an experiment
+// @Param for query string false "string for"
+// @Success 200 {object} object "label"
+// @Router /search/looking [get]
 func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	type Param struct {
 		For string `param:"for"`
@@ -126,6 +130,10 @@ func searchExperimentWith(defaults_parameters utils.QueryParameters, labels []st
 	return c.JSON(responses)
 }
 
+// @Description search for an experiment based on the first character(s)
+// @Param like query string false "string like"
+// @Success 200 {object} object "experiment"
+// @Router /search/ [get]
 func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 
 	default_param := new(DefaultParameters)
@@ -199,6 +207,18 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	return c.JSON(responses)
 }
 
+// @Description search for a publication by title, author or journal (at least one these parameters has to be specified)
+// @Param title query string false "string title"
+// @Param authors_short query string false "string author"
+// @Param journal query string false "string journal"
+// @Param owner_name query string false "string owner name"
+// @Param owner_email query string false "string owner email"
+// @Param abstract query string false "string abstract"
+// @Param brief_desc query string false "string brief desccription"
+// @Param authors_full query string false "string all authors"
+// @Param year query int false "int year"
+// @Success 200 {object} object "experiment"
+// @Router /search/publication [get]
 func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	type PublicationParam struct {
 		Title         string `json:"title" sql:"title" param:"title"`

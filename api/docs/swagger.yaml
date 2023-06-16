@@ -1,0 +1,196 @@
+basePath: /
+host: localhost:3000
+info:
+  contact: {}
+  description: API for climatearchive
+  title: Fiber Example API
+  version: "1.0"
+paths:
+  /insert/{id}:
+    post:
+      description: insert experiments and nimbus execution information in the database
+      responses: {}
+      summary: private route
+  /insert/clean:
+    get:
+      description: clean database of old (unused) data
+      responses: {}
+  /insert/labels/{id}:
+    post:
+      description: insert new labels
+      responses: {}
+      summary: private route
+  /insert/publication:
+    post:
+      description: insert a publication in the database
+      responses: {}
+      summary: private route
+  /search/:
+    get:
+      description: search for an experiment based on the first character(s)
+      parameters:
+      - description: string like
+        in: query
+        name: like
+        type: string
+      responses:
+        "200":
+          description: experiment
+          schema:
+            type: object
+  /search/looking:
+    get:
+      description: search for an experiment
+      parameters:
+      - description: string for
+        in: query
+        name: for
+        type: string
+      responses:
+        "200":
+          description: label
+          schema:
+            type: object
+  /search/publication:
+    get:
+      description: search for a publication by title, author or journal (at least
+        one these parameters has to be specified)
+      parameters:
+      - description: string title
+        in: query
+        name: title
+        type: string
+      - description: string author
+        in: query
+        name: authors_short
+        type: string
+      - description: string journal
+        in: query
+        name: journal
+        type: string
+      - description: string owner name
+        in: query
+        name: owner_name
+        type: string
+      - description: string owner email
+        in: query
+        name: owner_email
+        type: string
+      - description: string abstract
+        in: query
+        name: abstract
+        type: string
+      - description: string brief desccription
+        in: query
+        name: brief_desc
+        type: string
+      - description: string all authors
+        in: query
+        name: authors_full
+        type: string
+      - description: int year
+        in: query
+        name: year
+        type: integer
+      responses:
+        "200":
+          description: experiment
+          schema:
+            type: object
+  /select/{id}/:
+    get:
+      description: select an experiment by its id
+      parameters:
+      - description: string id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: string Config name
+        in: query
+        name: config_name
+        type: string
+      - description: string extension
+        in: query
+        name: extension
+        type: string
+      - description: bool lossless
+        in: query
+        name: lossless
+        type: boolean
+      - description: int nan_value_encoding
+        in: query
+        name: nan_value_encoding
+        type: integer
+      - description: float threshold
+        in: query
+        name: threshold
+        type: number
+      - description: int chunks
+        in: query
+        name: chunks
+        type: integer
+      - description: float rx
+        in: query
+        name: rx
+        type: number
+      - description: float ry
+        in: query
+        name: ry
+        type: number
+      responses:
+        "200":
+          description: experiment
+          schema:
+            type: object
+  /select/collection/:
+    get:
+      description: Select experiments with a list of ids
+      parameters:
+      - collectionFormat: csv
+        description: list ids
+        in: query
+        items:
+          type: string
+        name: ids
+        type: array
+      - description: string Config name
+        in: query
+        name: config_name
+        type: string
+      - description: string extension
+        in: query
+        name: extension
+        type: string
+      - description: bool lossless
+        in: query
+        name: lossless
+        type: boolean
+      - description: int nan_value_encoding
+        in: query
+        name: nan_value_encoding
+        type: integer
+      - description: float threshold
+        in: query
+        name: threshold
+        type: number
+      - description: int chunks
+        in: query
+        name: chunks
+        type: integer
+      - description: float rx
+        in: query
+        name: rx
+        type: number
+      - description: float ry
+        in: query
+        name: ry
+        type: number
+      responses:
+        "200":
+          description: '[]experiment'
+          schema:
+            items:
+              type: object
+            type: array
+swagger: "2.0"
