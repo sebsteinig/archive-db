@@ -49,6 +49,18 @@ type SelectDefaultParameters struct {
 	Ry                 float64 `param:"ry"`
 }
 
+// @Description select an experiment by its id
+// @Param id path string true "string id"
+// @Param config_name query string false "string Config name"
+// @Param extension query string false "string extension"
+// @Param lossless query bool false "bool lossless"
+// @Param nan_value_encoding query int false "int nan_value_encoding"
+// @Param threshold query float64 false "float threshold"
+// @Param chunks query int false "int chunks"
+// @Param rx query float64 false "float rx"
+// @Param ry query float64 false "float ry"
+// @Success 200 {object} object "experiment"
+// @Router /select/{id}/ [get]
 func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 	default_param := new(DefaultParameters)
 	query_parameters, err := utils.BuildQueryParameters(c, default_param)
@@ -148,6 +160,19 @@ func toAnyList[T any](input []T) []any {
 	}
 	return list
 }
+
+// @Description Select experiments with a list of ids
+// @Param ids query []string false "list ids"
+// @Param config_name query string false "string Config name"
+// @Param extension query string false "string extension"
+// @Param lossless query bool false "bool lossless"
+// @Param nan_value_encoding query int false "int nan_value_encoding"
+// @Param threshold query float64 false "float threshold"
+// @Param chunks query int false "int chunks"
+// @Param rx query float64 false "float rx"
+// @Param ry query float64 false "float ry"
+// @Success 200 {object} []object "[]experiment"
+// @Router /select/collection/ [get]
 func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	default_param := new(DefaultParameters)
 	query_parameters, err := utils.BuildQueryParameters(c, default_param)

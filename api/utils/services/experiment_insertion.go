@@ -101,6 +101,9 @@ func insertVariables(nimbus_execution utils.NimbusExecution, variables []utils.V
 	return err
 }
 
+// @Description insert experiments and nimbus execution information in the database
+// @Summary private route
+// @Router /insert/{id} [post]
 func InsertAll(exp_id string, request *utils.Request, pool *pgxpool.Pool) error {
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
@@ -175,6 +178,8 @@ func updatePublicationExp(exp string, tx pgx.Tx) ([]utils.Label, error) {
 	return labels, err
 }
 
+// @Description clean database of old (unused) data
+// @Router /insert/clean [get]
 func Clean(pool *pgxpool.Pool) error {
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
@@ -194,6 +199,9 @@ func Clean(pool *pgxpool.Pool) error {
 	return nil
 }
 
+// @Description insert new labels
+// @Summary private route
+// @Router /insert/labels/{id} [post]
 func AddLabelsForId(id string, labels []utils.Label, pool *pgxpool.Pool) error {
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {

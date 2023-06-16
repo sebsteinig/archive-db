@@ -28,7 +28,7 @@ func main() {
 	godotenv.Load(".env")
 	app := fiber.New(fiber.Config{AppName: "Archive API"})
 
-	app.Get("/swagger/*", swagger.HandlerDefault) // default
+	app.Get("/doc/*", swagger.HandlerDefault) // default
 	file, err := os.OpenFile("./archive_api.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)

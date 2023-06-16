@@ -26,7 +26,7 @@ type DefaultParameters struct {
 
 // @Description search for an experiment
 // @Param for query string false "string for"
-// @Success 200 {object} label
+// @Success 200 {object} object "label"
 // @Router /search/looking [get]
 func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	type Param struct {
@@ -132,7 +132,7 @@ func searchExperimentWith(defaults_parameters utils.QueryParameters, labels []st
 
 // @Description search for an experiment based on the first character(s)
 // @Param like query string false "string like"
-// @Success 200 {object} experiment
+// @Success 200 {object} object "experiment"
 // @Router /search/ [get]
 func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 
@@ -217,7 +217,7 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 // @Param brief_desc query string false "string brief desccription"
 // @Param authors_full query string false "string all authors"
 // @Param year query int false "int year"
-// @Success 200 {object} experiment
+// @Success 200 {object} object "experiment"
 // @Router /search/publication [get]
 func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	type PublicationParam struct {
