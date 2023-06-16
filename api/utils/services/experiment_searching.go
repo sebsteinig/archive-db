@@ -2,6 +2,7 @@ package services
 
 import (
 	"archive-api/utils"
+	"archive-api/utils/sql"
 	"context"
 	"fmt"
 	"log"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -35,40 +35,27 @@ func QueryExperiment(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	param := new(Param)
 	query_parameters, err := utils.BuildQueryParameters(c, param)
 	if err != nil {
+		log.Default().Println("ERROR <QueryExperiment>")
 		log.Default().Println("error :", err)
 		return err
 	}
-	pl := new(utils.Placeholder)
-	pl.Build(0, 1)
-	labels_sql := utils.ILikeBuilder{
-		Key:   "labels",
-		Value: query_parameters["For"],
-	}.Build(pl)
-
-	sql := fmt.Sprintf(`
+	query, err := sql.SQLf(`
 		SELECT 
 			labels
 		FROM table_labels
 		WHERE %s
 		GROUP BY labels
-		`, labels_sql)
-	rows, err := pool.Query(context.Background(), sql, pl.Args...)
-	if err != nil {
-		log.Default().Println("Unable to query:", sql, "error :", err)
-		return err
-	}
-	defer rows.Close()
-
+		`,
+		sql.ILikeBuilder{
+			Key:   "labels",
+			Value: query_parameters["For"],
+		})
 	type SQLResponse struct {
 		Labels string `sql:"labels" json:"labels"`
 	}
-
-	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (SQLResponse, error) {
-		var res SQLResponse
-		err := utils.BuildSQLResponse(row, &res)
-		return res, err
-	})
+	responses, err := sql.Receive[SQLResponse](context.Background(), &query, pool)
 	if err != nil {
+		log.Default().Println("ERROR <QueryExperiment>")
 		return err
 	}
 	return c.JSON(responses)
@@ -81,51 +68,31 @@ type SearchResponse struct {
 	Available_variables []string  `sql:"available_variables" json:"available_variables"`
 }
 
-func retrieveQueryResponse(rows pgx.Rows) ([]SearchResponse, error) {
-	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (SearchResponse, error) {
-		var res SearchResponse
-		//for _, column := range row.RawValues() {
-		//	fmt.Println(string(column))
-		//}
-		err := utils.BuildSQLResponse(row, &res)
-		return res, err
-	})
-	return responses, err
-}
-
 func searchExperimentWith(defaults_parameters utils.QueryParameters, labels []string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 
-	pl := new(utils.Placeholder)
-	pl.Build(0, 9+len(labels))
-	param_sql := ""
-
-	if len(defaults_parameters) > 0 {
-		param_builder := utils.AndBuilder{
-			Value: []utils.SqlBuilder{},
-		}
-		for key, value := range defaults_parameters {
-			param_builder.And(utils.EqualBuilder{
-				Key:   strings.ToLower(key),
-				Value: value,
-			})
-		}
-		param_sql += " AND " + param_builder.Build(pl)
+	param_builder := sql.AndBuilder{
+		Value:      []sql.SqlBuilder{},
+		And_Prefix: true,
+	}
+	for key, value := range defaults_parameters {
+		param_builder.And(sql.EqualBuilder{
+			Key:   strings.ToLower(key),
+			Value: value,
+		})
 	}
 
-	param_builder := utils.OrBuilder{
-		Value: []utils.SqlBuilder{},
+	label_builder := sql.OrBuilder{
+		Value:        []sql.SqlBuilder{},
+		Where_Prefix: true,
 	}
 	for _, label := range labels {
-		param_builder.Or(utils.EqualBuilder{
+		label_builder.Or(sql.EqualBuilder{
 			Key:   "table_labels.labels",
 			Value: strings.ToLower(label),
 		})
 	}
-	labels_sql := ""
-	if len(param_builder.Value) > 0 {
-		labels_sql += "WHERE " + param_builder.Build(pl)
-	}
-	sql := fmt.Sprintf(`
+
+	query, err := sql.SQLf(`
 		WITH valid_exp AS (
 			SELECT exp_id
 			FROM table_labels
@@ -150,15 +117,14 @@ func searchExperimentWith(defaults_parameters utils.QueryParameters, labels []st
 			ON table_nimbus_execution.exp_id = valid_exp.exp_id
 		GROUP BY id,table_exp.exp_id
 		ORDER BY created_at DESC;
-	`, labels_sql, param_sql)
-	rows, err := pool.Query(context.Background(), sql, pl.Args...)
+	`, label_builder, param_builder)
 	if err != nil {
-		log.Default().Println("Unable to query:", sql, "error :", err)
+		log.Default().Println("ERROR <searchExperimentWith>")
 		return err
 	}
-	defer rows.Close()
-	responses, err := retrieveQueryResponse(rows)
+	responses, err := sql.Receive[SearchResponse](context.Background(), &query, pool)
 	if err != nil {
+		log.Default().Println("ERROR <searchExperimentWith>")
 		return err
 	}
 	return c.JSON(responses)
@@ -173,6 +139,7 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	default_param := new(DefaultParameters)
 	query_parameters, err := utils.BuildQueryParameters(c, default_param)
 	if err != nil {
+		log.Default().Println("ERROR <SearchExperimentLike>")
 		log.Default().Println("error :", err)
 		return err
 	}
@@ -190,31 +157,26 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	}
 	likeParam := new(LikeParam)
 	like_parameter, err := utils.BuildQueryParameters(c, likeParam)
-	param_sql := ""
 
-	param_builder := utils.AndBuilder{
-		Value: []utils.SqlBuilder{},
+	param_builder := sql.AndBuilder{
+		Value:      []sql.SqlBuilder{},
+		And_Prefix: true,
 	}
-	if len(query_parameters) > 0 {
-		for key, value := range query_parameters {
-			param_builder.And(utils.EqualBuilder{
-				Key:   strings.ToLower(key),
-				Value: value,
-			})
-		}
+	for key, value := range query_parameters {
+		param_builder.And(sql.EqualBuilder{
+			Key:   strings.ToLower(key),
+			Value: value,
+		})
 	}
+
 	if like, ok := like_parameter["Like"]; ok {
-		param_builder.And(utils.EqualBuilder{
+		param_builder.And(sql.EqualBuilder{
 			Key:   "exp_id",
 			Value: like,
 		})
 	}
-	pl := new(utils.Placeholder)
-	pl.Build(0, 9)
-	if len(param_builder.Value) > 0 {
-		param_sql += " AND " + param_builder.Build(pl)
-	}
-	sql := fmt.Sprintf(`
+
+	query, err := sql.SQLf(`
 		SELECT 
 		
 			table_exp.exp_id,
@@ -232,15 +194,14 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 
 		GROUP BY id,table_exp.exp_id
 		ORDER BY created_at DESC;
-	`, param_sql)
-	rows, err := pool.Query(context.Background(), sql, pl.Args...)
+	`, param_builder)
 	if err != nil {
-		log.Default().Println("Unable to query:", sql, "error :", err)
+		log.Default().Println("ERROR <SearchExperimentLike>")
 		return err
 	}
-	defer rows.Close()
-	responses, err := retrieveQueryResponse(rows)
+	responses, err := sql.Receive[SearchResponse](context.Background(), &query, pool)
 	if err != nil {
+		log.Default().Println("ERROR <SearchExperimentLike>")
 		return err
 	}
 	return c.JSON(responses)
@@ -280,24 +241,17 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	if len(query_parameters) == 0 {
 		return fmt.Errorf("some parameters must be specified")
 	}
-	param_builder := utils.OrBuilder{
-		Value: []utils.SqlBuilder{},
+	param_builder := sql.OrBuilder{
+		Value:      []sql.SqlBuilder{},
+		And_Prefix: true,
 	}
 	for key, value := range query_parameters {
-		param_builder.Or(utils.FullLikeBuilder{
+		param_builder.Or(sql.FLikeBuilder{
 			Key:   strings.ToLower(key),
 			Value: value,
 		})
 	}
-
-	pl := new(utils.Placeholder)
-	pl.Build(0, len(query_parameters))
-
-	filters := param_builder.Build(pl)
-	if len(query_parameters) > 0 {
-		filters = " AND " + filters
-	}
-	sql := fmt.Sprintf(`
+	query, err := sql.SQLf(`
 		SELECT 
 			ARRAY_AGG(join_publication_exp.exp_id) as exps,
 			table_publication.title,
@@ -327,13 +281,12 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		INNER JOIN join_publication_exp
 		ON join_publication_exp.publication_id = table_publication.id %s
 		GROUP BY table_publication.id,table_publication.title,join_publication_exp.publication_id
-	`, filters)
-	rows, err := pool.Query(context.Background(), sql, pl.Args...)
+	`, param_builder)
+
 	if err != nil {
-		log.Default().Println("Unable to query:", sql, "error :", err)
+		log.Default().Println("ERROR <SearchExperimentForPublication>")
 		return err
 	}
-	defer rows.Close()
 	type Response struct {
 		Exps          []string `sql:"exps"`
 		Title         string   `sql:"title"`
@@ -346,13 +299,9 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		Authors_full  string   `sql:"authors_full"`
 		Authors_short string   `sql:"authors_short"`
 	}
-	responses, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Response, error) {
-		var res Response
-		err := utils.BuildSQLResponse(row, &res)
-		return res, err
-	})
+	responses, err := sql.Receive[Response](context.Background(), &query, pool)
 	if err != nil {
-		log.Default().Println(err)
+		log.Default().Println("ERROR <SearchExperimentForPublication>")
 		return err
 	}
 	return c.JSON(responses)
