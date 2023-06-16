@@ -2,82 +2,84 @@ package services
 
 import (
 	"archive-api/utils"
+	"archive-api/utils/sql"
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func insertTableExp(table_exp utils.TableExperiment, tx pgx.Tx) error {
-	pl := new(utils.Placeholder)
-	pl.Build(0, 10)
-	insert_into_table_exp, err := utils.BuildSQLInsert[utils.TableExperiment]("table_exp", table_exp, pl)
+	query, err := sql.Insert[utils.TableExperiment]("table_exp", table_exp)
+	query.Suffixe(` ON CONFLICT DO NOTHING`)
 	if err != nil {
-		log.Default().Println("error :", err)
+		log.Default().Println("ERROR <insertTableExp>")
 		return err
 	}
-	insert_into_table_exp += ` 
-		ON CONFLICT 
-		DO NOTHING`
-
-	_, err = tx.Exec(context.Background(), insert_into_table_exp, pl.Args...)
+	err = sql.Exec(context.Background(), &query, tx)
 	if err != nil {
-		log.Default().Println("table exp sql :", insert_into_table_exp)
+		log.Default().Println("ERROR <insertTableExp>")
+		return err
 	}
 	return err
 }
 
-func insertTableLabels(labels []string, exp_id string, tx pgx.Tx) error {
-	if len(labels) == 0 {
+func insertTableLabels(labels []utils.Label, publication_labels []utils.Label, exp_id string, tx pgx.Tx) error {
+	if len(labels) == 0 && len(publication_labels) == 0 {
 		return nil
 	}
-	pl := new(utils.Placeholder)
-	pl.Build(0, len(labels)*2)
-	insert_into_table_labels := `
-		INSERT INTO table_labels
-			(exp_id,labels) 
-		VALUES `
-	for i, label := range labels {
-		insert_into_table_labels += fmt.Sprintf("(%s,%s)",
-			pl.Get(exp_id),
-			pl.Get(strings.ToLower(label)),
-		)
-		if i < len(labels)-1 {
-			insert_into_table_labels += ","
-		}
+
+	var exp_label_joins []utils.JoinExpLabel
+	for _, label := range labels {
+		exp_label_joins = append(exp_label_joins, utils.JoinExpLabel{
+			Exp_id:   exp_id,
+			Label:    label.Label,
+			Metadata: label.Metadata,
+		})
 	}
-	insert_into_table_labels += `
-		ON CONFLICT (exp_id,labels) 
-		DO NOTHING`
-	_, err := tx.Exec(context.Background(), insert_into_table_labels, pl.Args...)
+	for _, label := range publication_labels {
+		exp_label_joins = append(exp_label_joins, utils.JoinExpLabel{
+			Exp_id:   exp_id,
+			Label:    label.Label,
+			Metadata: label.Metadata,
+		})
+	}
+
+	query, err := sql.Insert[utils.JoinExpLabel]("table_labels", exp_label_joins...)
+	query.Suffixe(` ON CONFLICT (exp_id,labels)  DO NOTHING`)
 	if err != nil {
-		log.Default().Println("table labels :", insert_into_table_labels)
+		log.Default().Println("ERROR <insertTableExp>")
+		return err
+	}
+	err = sql.Exec(context.Background(), &query, tx)
+	if err != nil {
+		log.Default().Println("ERROR <insertTableExp>")
+		return err
 	}
 	return err
 }
 
 func insertVariables(nimbus_execution utils.NimbusExecution, variables []utils.Variable, tx pgx.Tx) error {
-	pl := new(utils.Placeholder)
-	pl.Build(0, 144)
-
-	insert_into_table_nimbus, err := utils.BuildSQLInsert[utils.NimbusExecution]("table_nimbus_execution", nimbus_execution, pl)
-	insert_into_table_variable, err_sql := utils.BuildSQLInsertAll[utils.Variable]("table_variable", variables, pl)
-	if err_sql != nil {
-		return err_sql
+	insert_into_table_nimbus, err := sql.Insert[utils.NimbusExecution]("table_nimbus_execution", nimbus_execution)
+	if err != nil {
+		return err
 	}
-	sql := fmt.Sprintf(`
-		WITH 
-			nimbus_id AS 
-				(%s ON CONFLICT (exp_id, config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)
-					DO UPDATE SET created_at = excluded.created_at 
-						WHERE table_nimbus_execution.created_at < excluded.created_at 
-				RETURNING id),
-
-			var_ids_name AS 
-				(%s RETURNING name,id)
+	insert_into_table_variable, err2 := sql.Insert[utils.Variable]("table_variable", variables...)
+	if err2 != nil {
+		return err2
+	}
+	query, _ := sql.SQLf("WITH nimbus_id AS (")
+	query.Append(
+		insert_into_table_nimbus.Suffixe(` 
+		ON CONFLICT (exp_id, config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)
+			DO UPDATE SET created_at = excluded.created_at 
+				WHERE table_nimbus_execution.created_at < excluded.created_at 
+		RETURNING id),
+	
+		var_ids_name AS 
+		(`), insert_into_table_variable.Suffixe(` RETURNING name,id)
 
 		INSERT INTO join_nimbus_execution_variables
 
@@ -89,31 +91,42 @@ func insertVariables(nimbus_execution utils.NimbusExecution, variables []utils.V
 			FROM var_ids_name CROSS JOIN nimbus_id
 
 			ON CONFLICT (id_nimbus_execution,variable_name)
-			DO UPDATE SET variable_id = excluded.variable_id;`,
-		insert_into_table_nimbus, insert_into_table_variable)
-
-	_, err = tx.Exec(context.Background(), sql, pl.Args...)
+			DO UPDATE SET variable_id = excluded.variable_id;
+		`))
+	err = sql.Exec(context.Background(), &query, tx)
+	if err != nil {
+		log.Default().Println("ERROR <insertVariables>")
+		return err
+	}
 	return err
 }
 
+// @Description insert experiments and nimbus execution information in the database
+// @Summary private route
+// @Router /insert/{id} [post]
 func InsertAll(exp_id string, request *utils.Request, pool *pgxpool.Pool) error {
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
 			err := insertVariables(request.Request.Table_nimbus_execution, request.Request.Table_variable, tx)
 			if err != nil {
-				log.Default().Println("error : ", err)
+				log.Default().Println("ERROR <InsertAll>")
 				return err
 			}
 
 			err = insertTableExp(request.Request.Table_experiment, tx)
 			if err != nil {
-				log.Default().Println("error : ", err)
+				log.Default().Println("ERROR <InsertAll>")
 				return err
 			}
 
-			err = insertTableLabels(request.Request.Table_experiment.Labels, request.Request.Table_experiment.Exp_id, tx)
+			publication_labels, err_u := updatePublicationExp(exp_id, tx)
+			if err_u != nil {
+				log.Default().Println("ERROR <InsertAll>")
+				return err_u
+			}
+			err = insertTableLabels(request.Request.Table_experiment.Labels, publication_labels, request.Request.Table_experiment.Exp_id, tx)
 			if err != nil {
-				log.Default().Println("error : ", err)
+				log.Default().Println("ERROR <InsertAll>")
 				return err
 			}
 			return nil
@@ -125,6 +138,48 @@ func InsertAll(exp_id string, request *utils.Request, pool *pgxpool.Pool) error 
 	return nil
 }
 
+func updatePublicationExp(exp string, tx pgx.Tx) ([]utils.Label, error) {
+	query, err := sql.SQLf(`
+		UPDATE join_publication_exp SET requested_exp_id = NULL, exp_id = %s
+		WHERE requested_exp_id = %s
+		RETURNING metadata
+	`, exp, exp)
+	if err != nil {
+		log.Default().Println("ERROR <updatePublicationExp>")
+		return nil, err
+	}
+	type Response struct {
+		Metadata []map[string]any `sql:"metadata"`
+	}
+	responses, err := sql.Receive[Response](context.Background(), &query, tx)
+	if err != nil {
+		log.Default().Println("ERROR <updatePublicationExp>")
+		return nil, err
+	}
+	labels := make([]utils.Label, 0, len(responses))
+	for _, res := range responses {
+		for _, lm := range res.Metadata {
+			if l, ok := lm["label"]; ok {
+				l_str := fmt.Sprintf("%s", l)
+				label := utils.Label{
+					Label: l_str,
+				}
+				if m, ok := lm["metadata"]; ok {
+					switch m.(type) {
+					case map[string]any:
+						label.Metadata = m.(map[string]any)
+					}
+				}
+				labels = append(labels, label)
+			}
+
+		}
+	}
+	return labels, err
+}
+
+// @Description clean database of old (unused) data
+// @Router /insert/clean [get]
 func Clean(pool *pgxpool.Pool) error {
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
@@ -144,12 +199,15 @@ func Clean(pool *pgxpool.Pool) error {
 	return nil
 }
 
-func AddLabelsForId(id string, labels []string, pool *pgxpool.Pool) error {
+// @Description insert new labels
+// @Summary private route
+// @Router /insert/labels/{id} [post]
+func AddLabelsForId(id string, labels []utils.Label, pool *pgxpool.Pool) error {
 	if err := pgx.BeginFunc(context.Background(), pool,
 		func(tx pgx.Tx) error {
-			err := insertTableLabels(labels, id, tx)
+			err := insertTableLabels(labels, []utils.Label{}, id, tx)
 			if err != nil {
-				log.Default().Println("error : ", err)
+				log.Default().Println("ERROR <AddLabelsForId>")
 				return err
 			}
 			return nil
@@ -158,6 +216,5 @@ func AddLabelsForId(id string, labels []string, pool *pgxpool.Pool) error {
 		log.Default().Println("transactions error :", err)
 		return err
 	}
-	log.Default().Println("insert success", id)
 	return nil
 }

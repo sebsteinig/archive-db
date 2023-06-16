@@ -1,0 +1,297 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API for climatearchive",
+        "title": "Fiber Example API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:3000",
+    "basePath": "/",
+    "paths": {
+        "/insert/clean": {
+            "get": {
+                "description": "clean database of old (unused) data",
+                "responses": {}
+            }
+        },
+        "/insert/labels/{id}": {
+            "post": {
+                "description": "insert new labels",
+                "summary": "private route",
+                "responses": {}
+            }
+        },
+        "/insert/publication": {
+            "post": {
+                "description": "insert a publication in the database",
+                "summary": "private route",
+                "responses": {}
+            }
+        },
+        "/insert/{id}": {
+            "post": {
+                "description": "insert experiments and nimbus execution information in the database",
+                "summary": "private route",
+                "responses": {}
+            }
+        },
+        "/search/": {
+            "get": {
+                "description": "search for an experiment based on the first character(s)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "string like",
+                        "name": "like",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "experiment",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/search/looking": {
+            "get": {
+                "description": "search for an experiment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "string for",
+                        "name": "for",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "label",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/search/publication": {
+            "get": {
+                "description": "search for a publication by title, author or journal (at least one these parameters has to be specified)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "string title",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string author",
+                        "name": "authors_short",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string journal",
+                        "name": "journal",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string owner name",
+                        "name": "owner_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string owner email",
+                        "name": "owner_email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string abstract",
+                        "name": "abstract",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string brief desccription",
+                        "name": "brief_desc",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string all authors",
+                        "name": "authors_full",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int year",
+                        "name": "year",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "experiment",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/select/collection/": {
+            "get": {
+                "description": "Select experiments with a list of ids",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "list ids",
+                        "name": "ids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string Config name",
+                        "name": "config_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string extension",
+                        "name": "extension",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "bool lossless",
+                        "name": "lossless",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int nan_value_encoding",
+                        "name": "nan_value_encoding",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "float threshold",
+                        "name": "threshold",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int chunks",
+                        "name": "chunks",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "float rx",
+                        "name": "rx",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "float ry",
+                        "name": "ry",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "[]experiment",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/select/{id}/": {
+            "get": {
+                "description": "select an experiment by its id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "string id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "string Config name",
+                        "name": "config_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "string extension",
+                        "name": "extension",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "bool lossless",
+                        "name": "lossless",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int nan_value_encoding",
+                        "name": "nan_value_encoding",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "float threshold",
+                        "name": "threshold",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int chunks",
+                        "name": "chunks",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "float rx",
+                        "name": "rx",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "float ry",
+                        "name": "ry",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "experiment",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

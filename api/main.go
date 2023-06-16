@@ -6,6 +6,10 @@ import (
 	"log"
 	"os"
 
+	"github.com/gofiber/swagger"
+
+	_ "archive-api/docs"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
@@ -15,10 +19,16 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// @title Fiber Example API
+// @version 1.0
+// @description API for climatearchive
+// @host localhost:3000
+// @BasePath /
 func main() {
 	godotenv.Load(".env")
 	app := fiber.New(fiber.Config{AppName: "Archive API"})
 
+	app.Get("/doc/*", swagger.HandlerDefault) // default
 	file, err := os.OpenFile("./archive_api.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)

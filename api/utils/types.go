@@ -10,7 +10,7 @@ import (
 
 type TableExperiment struct {
 	Exp_id        string                 `json:"exp_id" sql:"exp_id"`
-	Labels        []string               `json:"labels"`
+	Labels        []Label                `json:"labels"`
 	Co2           float64                `json:"co2" sql:"co2"`
 	Coast_Line_id int64                  `json:"coast_line_id" sql:"coast_line_id"`
 	Gmst          float64                `json:"gmst" sql:"gmst"`
@@ -20,9 +20,18 @@ type TableExperiment struct {
 	Metadata      map[string]interface{} `json:"metadata"`
 }
 
+type Label struct {
+	Label    string         `json:"label" sql:"labels"`
+	Metadata map[string]any `json:"metadata" sql:"metadata"`
+}
+type JoinExpLabel struct {
+	Exp_id   string         `sql:"exp_id"`
+	Label    string         `sql:"labels"`
+	Metadata map[string]any `json:"metadata" sql:"metadata"`
+}
 type ExperimentJSON struct {
 	Exp_id   string                 `json:"exp_id" validate:"required"`
-	Labels   []string               `json:"labels"`
+	Labels   []Label                `json:"labels"`
 	Metadata map[string]interface{} `json:"metadata"`
 }
 

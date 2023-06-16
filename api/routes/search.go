@@ -4,6 +4,8 @@ import (
 	"archive-api/utils/services"
 	"time"
 
+	_ "archive-api/docs"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
