@@ -28,13 +28,14 @@ CREATE TABLE IF NOT EXISTS public.table_nimbus_execution
     extension text COLLATE pg_catalog."default" NOT NULL,
     lossless boolean NOT NULL,
     nan_value_encoding integer NOT NULL,
-    chunks integer NOT NULL,
+    chunks_time integer NOT NULL,
+    chunks_vertical integer NOT NULL,
     rx real NOT NULL,
     ry real NOT NULL,
     exp_id text COLLATE pg_catalog."default" NOT NULL,
     threshold real NOT NULL,
     CONSTRAINT table_nimbus_execution_pkey PRIMARY KEY (id),
-    CONSTRAINT unique_config UNIQUE (exp_id, config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)
+    CONSTRAINT unique_config UNIQUE (exp_id, config_name, extension, lossless, nan_value_encoding, chunks_time, chunks_vertical, rx, ry)
 )
 
 TABLESPACE pg_default;

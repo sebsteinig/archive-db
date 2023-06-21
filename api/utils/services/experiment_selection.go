@@ -31,7 +31,8 @@ type Response struct {
 	Extension          string                 `sql:"extension" json:"extension"`
 	Lossless           bool                   `sql:"lossless" json:"lossless"`
 	Nan_value_encoding int                    `sql:"nan_value_encoding" json:"nan_value_encoding"`
-	Chunks             int                    `sql:"chunks" json:"chunks"`
+	Chunks_time        int                    `sql:"chunks_time" json:"chunks_time"`
+	Chunks_vertical    int                    `sql:"chunks_vertical" json:"chunks_vertical"`
 	Rx                 float64                `sql:"rx" json:"rx"`
 	Ry                 float64                `sql:"ry" json:"ry"`
 	Exp_id             string                 `sql:"exp_id" json:"exp_id"`
@@ -44,7 +45,8 @@ type SelectDefaultParameters struct {
 	Lossless           bool    `param:"lossless" `
 	Nan_value_encoding int     `param:"nan_value_encoding" `
 	Threshold          float64 `param:"threshold" `
-	Chunks             int     `param:"chunks"`
+	Chunks_time        int     `param:"chunks_time"`
+	Chunks_vertical    int     `param:"chunks_vertical"`
 	Rx                 float64 `param:"rx"`
 	Ry                 float64 `param:"ry"`
 }
@@ -56,7 +58,8 @@ type SelectDefaultParameters struct {
 // @Param lossless query bool false "bool lossless"
 // @Param nan_value_encoding query int false "int nan_value_encoding"
 // @Param threshold query float64 false "float threshold"
-// @Param chunks query int false "int chunks"
+// @Param chunks_time query int false "int chunks_time"
+// @Param chunks_vertical query int false "int chunks_vertical"
 // @Param rx query float64 false "float rx"
 // @Param ry query float64 false "float ry"
 // @Success 200 {object} object "experiment"
@@ -127,7 +130,8 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 		extension,
 		lossless,
 		nan_value_encoding,
-		chunks,
+		chunks_time,
+		chunks_vertical,
 		rx,
 		ry,
 		exp_id,
@@ -168,7 +172,8 @@ func toAnyList[T any](input []T) []any {
 // @Param lossless query bool false "bool lossless"
 // @Param nan_value_encoding query int false "int nan_value_encoding"
 // @Param threshold query float64 false "float threshold"
-// @Param chunks query int false "int chunks"
+// @Param chunks_time query int false "int chunks_time"
+// @Param chunks_vertical query int false "int chunks_vertical"
 // @Param rx query float64 false "float rx"
 // @Param ry query float64 false "float ry"
 // @Success 200 {object} []object "[]experiment"
@@ -255,7 +260,8 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		extension,
 		lossless,
 		nan_value_encoding,
-		chunks,
+		chunks_time,
+		chunks_vertical,
 		rx,
 		ry,
 		exp_id,

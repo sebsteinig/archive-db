@@ -126,9 +126,13 @@ paths:
         in: query
         name: threshold
         type: number
-      - description: int chunks
+      - description: int chunks_time
         in: query
-        name: chunks
+        name: chunks_time
+        type: integer
+      - description: int chunks_vertical
+        in: query
+        name: chunks_vertical
         type: integer
       - description: float rx
         in: query
@@ -174,9 +178,13 @@ paths:
         in: query
         name: threshold
         type: number
-      - description: int chunks
+      - description: int chunks_time
         in: query
-        name: chunks
+        name: chunks_time
+        type: integer
+      - description: int chunks_vertical
+        in: query
+        name: chunks_vertical
         type: integer
       - description: float rx
         in: query

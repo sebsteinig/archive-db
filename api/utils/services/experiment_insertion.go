@@ -73,7 +73,7 @@ func insertVariables(nimbus_execution utils.NimbusExecution, variables []utils.V
 	query, _ := sql.SQLf("WITH nimbus_id AS (")
 	query.Append(
 		insert_into_table_nimbus.Suffixe(` 
-		ON CONFLICT (exp_id, config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)
+		ON CONFLICT (exp_id, config_name, extension, lossless, nan_value_encoding, chunks_time, chunks_vertical, rx, ry)
 			DO UPDATE SET created_at = excluded.created_at 
 				WHERE table_nimbus_execution.created_at < excluded.created_at 
 		RETURNING id),
