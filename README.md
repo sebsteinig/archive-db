@@ -14,6 +14,7 @@ make sure you have docker installed on your device, otherwise follow the instruc
 If no version is specified, the application will be run with the source code from the main branch, otherwise it will search for the release branch with the specified version.
 
 #### In development mode
+ run the following command :
 ```console
   bash build-dev.sh [OPTIONS] -b, --branch name
 ```
