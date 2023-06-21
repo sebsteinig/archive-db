@@ -289,16 +289,16 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return err
 	}
 	type Response struct {
-		Exps          []string `sql:"exps"`
-		Title         string   `sql:"title"`
-		Journal       string   `sql:"journal"`
-		Owner_name    string   `sql:"owner_name"`
-		Owner_email   string   `sql:"owner_email"`
-		Abstract      string   `sql:"abstract"`
-		Brief_desc    string   `sql:"brief_desc"`
-		Year          int      `sql:"year"`
-		Authors_full  string   `sql:"authors_full"`
-		Authors_short string   `sql:"authors_short"`
+		Exps          []string `json:"exps" sql:"exps"`
+		Title         string   `json:"title" sql:"title"`
+		Journal       string   `json:"journal" sql:"journal"`
+		Owner_name    string   `json:"owner_name" sql:"owner_name"`
+		Owner_email   string   `json:"owner_email" sql:"owner_email"`
+		Abstract      string   `json:"abstract" sql:"abstract"`
+		Brief_desc    string   `json:"brief_desc" sql:"brief_desc"`
+		Year          int      `json:"year" sql:"year"`
+		Authors_full  string   `json:"authors_full" sql:"authors_full"`
+		Authors_short string   `json:"authors_short" sql:"authors_short"`
 	}
 	responses, err := sql.Receive[Response](context.Background(), &query, pool)
 	if err != nil {

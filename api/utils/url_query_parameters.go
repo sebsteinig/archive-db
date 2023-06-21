@@ -29,6 +29,24 @@ func BuildQueryParameters(c *fiber.Ctx, params_struct any) (QueryParameters, err
 
 	query_parameters := make(QueryParameters)
 
+	keys := make(map[string]string)
+	for j := 0; j < elements.NumField(); j++ {
+		key, ok := elements.Type().Field(j).Tag.Lookup("param")
+		if ok {
+			keys[key] = ""
+		}
+	}
+	correct_query, wrong_key := true, ""
+	c.Context().QueryArgs().VisitAll(func(key, value []byte) {
+		_, ok := keys[string(key)]
+		if !ok {
+			correct_query, wrong_key = false, string(key)
+		}
+	})
+	if !correct_query {
+		return nil, fmt.Errorf("wrong key %s in query parameters", wrong_key)
+	}
+
 	for i := 0; i < elements.NumField(); i++ {
 		tag := elements.Type().Field(i).Tag
 		key, ok := tag.Lookup("param")
@@ -43,7 +61,7 @@ func BuildQueryParameters(c *fiber.Ctx, params_struct any) (QueryParameters, err
 		key = strings.Replace(key, ",", "", -1)
 		value := c.Query(key, error_param)
 		if value == error_param && required {
-			return nil, fmt.Errorf("Paramter %s is required", key)
+			return nil, fmt.Errorf("Parameter %s is required", key)
 		}
 		if value != error_param && elements.Field(i).CanSet() {
 			interface_type := elements.Field(i).Interface()
