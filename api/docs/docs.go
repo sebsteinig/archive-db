@@ -200,8 +200,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "int chunks",
-                        "name": "chunks",
+                        "description": "int chunks_time",
+                        "name": "chunks_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int chunks_vertical",
+                        "name": "chunks_vertical",
                         "in": "query"
                     },
                     {
@@ -273,8 +279,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "int chunks",
-                        "name": "chunks",
+                        "description": "int chunks_time",
+                        "name": "chunks_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int chunks_vertical",
+                        "name": "chunks_vertical",
                         "in": "query"
                     },
                     {

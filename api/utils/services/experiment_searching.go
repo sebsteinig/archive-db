@@ -19,7 +19,8 @@ type DefaultParameters struct {
 	Lossless           bool    `param:"lossless" `
 	Nan_value_encoding int     `param:"nan_value_encoding" `
 	Threshold          float64 `param:"threshold" `
-	Chunks             int     `param:"chunks"`
+	Chunks_time        int     `param:"chunks_time"`
+	Chunks_vertical    int     `param:"chunks_vertical"`
 	Rx                 float64 `param:"rx"`
 	Ry                 float64 `param:"ry"`
 }
@@ -282,7 +283,7 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		ON join_publication_exp.publication_id = table_publication.id %s
 		GROUP BY table_publication.id,table_publication.title,join_publication_exp.publication_id
 	`, param_builder)
-
+	log.Default().Println(query)
 	if err != nil {
 		log.Default().Println("ERROR <SearchExperimentForPublication>")
 		return err

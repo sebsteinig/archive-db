@@ -131,7 +131,8 @@ type NimbusExecution struct {
 	Lossless           bool    `json:"lossless" validate:"required" sql:"lossless"`
 	Nan_value_encoding int     `json:"nan_value_encoding" validate:"required" sql:"nan_value_encoding"`
 	Threshold          float32 `json:"threshold" validate:"required" sql:"threshold"`
-	Chunks             int     `json:"chunks" validate:"required,gte=0" sql:"chunks"`
+	Chunks_time        int     `json:"chunks_time" validate:"required,gte=0" sql:"chunks_time"`
+	Chunks_vertical    int     `json:"chunks_vertical" validate:"required,gte=0" sql:"chunks_vertical"`
 	Rx                 float64 `json:"rx" validate:"" sql:"rx"`
 	Ry                 float64 `json:"ry" validate:"" sql:"ry"`
 }

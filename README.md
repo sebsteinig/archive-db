@@ -47,7 +47,7 @@ API_KEY="your secret api key"
    ```
 ## API Routes
 Documentation for each route can be found in the page at the route /doc.
-- Insert  
+### Insert  
   There are 4 routes for insert :
   - insert/{id} : (POST) add variables, experiment and execution information in the database. Accept data in the following structure :
        ```json
@@ -60,7 +60,8 @@ Documentation for each route can be found in the page at the route /doc.
               "lossless" : "boolean",
               "nan_value_encoding" : "int",
               "threshold" : "float",
-              "chunks" : "int",
+              "chunks_time" : "int",
+              "chunks_vertical" : "int",
               "rx" : "float",
               "ry" : "float"
           },
@@ -105,17 +106,17 @@ Documentation for each route can be found in the page at the route /doc.
       "exp_ids" : []"string"}
     ```
   - insert/clean : (GET) clean the unused data in the database
-- Search
+### Search  
   There are 3 routes for search :
-  - search/looking/ : (GET) search labels starting with the character(s) specified in the "for" parameter
+  - search/looking/ : (GET) search labels starting with the character(s) specified in the "for" parameter.
       - query parameters :
           - "for" : string
-  - search/ : (GET) search for experiments starting the character(s) specified in the "like" parameter
+  - search/ : (GET) search for experiments starting with the character(s) specified in the "like" parameter.
       - query parameters :
           - "like" : string
           - "with" : string
-  - search/publication/ : (GET) search publication based on the title, the author and the journal (at least one of these parameters)
-- Select
+  - search/publication/ : (GET) search publication based on the title, the author and the journal (at least one of these parameters).
+### Select  
   There are 2 routes for select :
   - select/{id} : (GET) select experiment by its id
   - select/collection/ : (GET) select multiple experiments by their ids
@@ -126,6 +127,7 @@ Documentation for each route can be found in the page at the route /doc.
           - lossless : bool
           - nan_value_encoding : int
           - threshold : float64
-          - chunks : int
+          - chunks_time : int
+          - chunks_vertical : int
           - rx : float64
           - ry : float64
