@@ -236,6 +236,22 @@ const docTemplate = `{
                 }
             }
         },
+        "/select/journal/": {
+            "get": {
+                "description": "Get all different journals that published a paper that is in the database",
+                "responses": {
+                    "200": {
+                        "description": "[]journal",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/select/{id}/": {
             "get": {
                 "description": "select an experiment by its id",

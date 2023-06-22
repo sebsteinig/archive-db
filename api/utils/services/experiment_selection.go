@@ -13,6 +13,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type Journal struct {
+	Journal string `sql:"journal" json:"journal"`
+}
+
 type Response struct {
 	VariableName       string                 `sql:"variable_name" json:"variable_name"`
 	Path_ts            []string               `sql:"paths_ts" json:"paths_ts"`
@@ -293,4 +297,23 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return fmt.Errorf("ERROR :: something went wrong when mapping result")
 	}
 	return c.JSON(map_exp)
+}
+
+// @Description Get all different journals that published a paper that is in the database
+// @Success 200 {object} []object "[]journal"
+// @Router /select/journal/ [get]
+func GetJournals(c *fiber.Ctx, pool *pgxpool.Pool) error {
+	query, err := sql.SQLf(`SELECT DISTINCT journal FROM table_publication`)
+	if err != nil {
+		log.Default().Println("ERROR <GetJournals>")
+		return err
+	}
+
+	responses, err := sql.Receive[Journal](context.Background(), &query, pool)
+	if err != nil {
+		log.Default().Println("ERROR <GetJournals>")
+		return err
+	}
+	return c.JSON(responses)
+
 }

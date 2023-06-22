@@ -283,7 +283,6 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		ON join_publication_exp.publication_id = table_publication.id %s
 		GROUP BY table_publication.id,table_publication.title,join_publication_exp.publication_id
 	`, param_builder)
-	log.Default().Println(query)
 	if err != nil {
 		log.Default().Println("ERROR <SearchExperimentForPublication>")
 		return err

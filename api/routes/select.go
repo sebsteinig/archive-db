@@ -39,6 +39,10 @@ func BuildSelectRoutes(app *fiber.App, pool *pgxpool.Pool) {
 		return services.GetExperimentsByIDs(c, pool)
 	})
 
+	select_routes.Get("/journal", func(c *fiber.Ctx) error {
+		return services.GetJournals(c, pool)
+	})
+
 	select_routes.Get("/:id", func(c *fiber.Ctx) error {
 		id := c.Params("id")
 		return services.GetExperimentByID(id, c, pool)
