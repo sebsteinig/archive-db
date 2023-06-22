@@ -201,4 +201,15 @@ paths:
             items:
               type: object
             type: array
+  /select/journal/:
+    get:
+      description: Get all different journals that published a paper that is in the
+        database
+      responses:
+        "200":
+          description: '[]journal'
+          schema:
+            items:
+              type: object
+            type: array
 swagger: "2.0"
