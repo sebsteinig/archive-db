@@ -32,6 +32,36 @@ func (builder EqualBuilder) Build(pl *Placeholder) string {
 	return prefix + fmt.Sprintf("%s = %s", builder.Key, pl.Push(builder.Value))
 }
 
+type BetweenBuilder struct {
+	Key          string
+	Value_Lower  int
+	Value_Upper  int
+	And_Prefix   bool
+	Or_Prefix    bool
+	Where_Prefix bool
+}
+
+func (builder BetweenBuilder) Build(pl *Placeholder) string {
+	if builder.Value_Lower == 0 && builder.Value_Upper == 0 {
+		return ""
+	}
+	val_lower := builder.Value_Lower
+	val_upper := builder.Value_Upper
+	if val_lower > val_upper {
+		val_lower = builder.Value_Upper
+		val_upper = builder.Value_Lower
+	}
+	prefix := ""
+	if builder.Where_Prefix {
+		prefix += " WHERE "
+	} else if builder.And_Prefix {
+		prefix += " AND "
+	} else if builder.Or_Prefix {
+		prefix += " OR "
+	}
+	return prefix + fmt.Sprintf("%s BETWEEN %s AND %s", builder.Key, pl.Push(val_lower), pl.Push(val_upper))
+}
+
 type LikeBuilder struct {
 	Key          string
 	Value        any
