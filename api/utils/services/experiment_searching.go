@@ -217,7 +217,7 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 // @Param abstract query string false "string abstract"
 // @Param brief_desc query string false "string brief desccription"
 // @Param authors_full query string false "string all authors"
-// @Param year query int false "int year"
+// @Param year query []int false "[]int year"
 // @Success 200 {object} object "experiment"
 // @Router /search/publication [get]
 func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
@@ -226,12 +226,12 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		Authors_short string `json:"authors_short" sql:"authors_short" param:"authors_short"`
 		//Authors_full  string `json:"authors_full" sql:"authors_full" param:"authors"`
 		Journal      string `json:"journal" sql:"journal" param:"journal"`
+		Year         []int  `json:"year" sql:"year" param:"year"`
 		Owner_name   string `json:"owner_name" sql:"owner_name"`
 		Owner_email  string `json:"owner_email" sql:"owner_email"`
 		Abstract     string `json:"abstract" sql:"abstract"`
 		Brief_desc   string `json:"brief_desc" sql:"brief_desc"`
 		Authors_full string `json:"authors_full" sql:"authors_full"`
-		Year         int    `json:"year" sql:"year"`
 	}
 	publication_param := new(PublicationParam)
 	query_parameters, err := utils.BuildQueryParameters(c, publication_param)
@@ -247,10 +247,26 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		And_Prefix: true,
 	}
 	for key, value := range query_parameters {
-		param_builder.Or(sql.FLikeBuilder{
-			Key:   strings.ToLower(key),
-			Value: value,
-		})
+		if key == "Year" {
+			var years []int = value.([]int)
+			if len(years) == 1 {
+				param_builder.Or(sql.EqualBuilder{
+					Key:   strings.ToLower(key),
+					Value: years[0],
+				})
+			} else if len(years) == 2 {
+				param_builder.Or(sql.BetweenBuilder{
+					Key:         strings.ToLower(key),
+					Value_Lower: years[0],
+					Value_Upper: years[1],
+				})
+			}
+		} else {
+			param_builder.Or(sql.FLikeBuilder{
+				Key:   strings.ToLower(key),
+				Value: value,
+			})
+		}
 	}
 	query, err := sql.SQLf(`
 		SELECT 
