@@ -242,7 +242,7 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	if len(query_parameters) == 0 {
 		return fmt.Errorf("some parameters must be specified")
 	}
-	param_builder := sql.OrBuilder{
+	param_builder := sql.AndBuilder{
 		Value:      []sql.SqlBuilder{},
 		And_Prefix: true,
 	}
@@ -250,19 +250,19 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		if key == "Year" {
 			var years []int = value.([]int)
 			if len(years) == 1 {
-				param_builder.Or(sql.EqualBuilder{
+				param_builder.And(sql.EqualBuilder{
 					Key:   strings.ToLower(key),
 					Value: years[0],
 				})
 			} else if len(years) == 2 {
-				param_builder.Or(sql.BetweenBuilder{
+				param_builder.And(sql.BetweenBuilder{
 					Key:         strings.ToLower(key),
 					Value_Lower: years[0],
 					Value_Upper: years[1],
 				})
 			}
 		} else {
-			param_builder.Or(sql.FLikeBuilder{
+			param_builder.And(sql.FLikeBuilder{
 				Key:   strings.ToLower(key),
 				Value: value,
 			})
