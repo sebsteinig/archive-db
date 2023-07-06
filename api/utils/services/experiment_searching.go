@@ -270,12 +270,12 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	}
 	query, err := sql.SQLf(`
 		SELECT 
-			ARRAY_AGG(join_publication_exp.exp_id) as exps,
+			ARRAY_AGG('{"id":"'||join_publication_exp.exp_id || '","metadata":' || join_publication_exp.metadata || '}') as exps,
 			table_publication.title,
 			table_publication.journal,
 			table_publication.owner_name,
 			table_publication.owner_email,
-			--table_publication.abstract,
+			table_publication.abstract,
 			--table_publication.brief_desc,
 			table_publication.year,
 			table_publication.authors_full,
