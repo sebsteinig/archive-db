@@ -20,10 +20,10 @@ services :
       POSTGRES_DB : archive
     ports:
       - 5432:5432
-    volumes:
-      - data_dev:/var/lib/postgresql/data
-      - backup_dev:/var/lib/postgresql/backup
-      - logs_dev:/var/lib/postgresql/logs
+    # volumes:
+    #   - data_dev:/var/lib/postgresql/data
+    #   - backup_dev:/var/lib/postgresql/backup
+    #   - logs_dev:/var/lib/postgresql/logs
   db-test :
     container_name : test_postgres_container
     build :
