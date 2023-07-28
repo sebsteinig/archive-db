@@ -200,8 +200,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "int chunks",
-                        "name": "chunks",
+                        "description": "int chunks_time",
+                        "name": "chunks_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int chunks_vertical",
+                        "name": "chunks_vertical",
                         "in": "query"
                     },
                     {
@@ -220,6 +226,22 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "[]experiment",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/select/journal/": {
+            "get": {
+                "description": "Get all different journals that published a paper that is in the database",
+                "responses": {
+                    "200": {
+                        "description": "[]journal",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -273,8 +295,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "int chunks",
-                        "name": "chunks",
+                        "description": "int chunks_time",
+                        "name": "chunks_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "int chunks_vertical",
+                        "name": "chunks_vertical",
                         "in": "query"
                     },
                     {

@@ -13,10 +13,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type Journal struct {
+	Journal string `sql:"journal" json:"journal"`
+}
+
 type Response struct {
 	VariableName       string                 `sql:"variable_name" json:"variable_name"`
-	Path_ts            []string               `sql:"paths_ts" json:"paths_ts"`
-	Path_mean          []string               `sql:"paths_mean" json:"paths_mean"`
+	Path_ts            map[string]interface{} `sql:"paths_ts" json:"paths_ts"`
+	Path_mean          map[string]interface{} `sql:"paths_mean" json:"paths_mean"`
 	Levels             int                    `sql:"levels" json:"levels"`
 	Timesteps          int                    `sql:"timesteps" json:"timesteps"`
 	Xsize              int                    `sql:"xsize" json:"xsize"`
@@ -31,11 +35,12 @@ type Response struct {
 	Extension          string                 `sql:"extension" json:"extension"`
 	Lossless           bool                   `sql:"lossless" json:"lossless"`
 	Nan_value_encoding int                    `sql:"nan_value_encoding" json:"nan_value_encoding"`
-	Chunks             int                    `sql:"chunks" json:"chunks"`
-	Rx                 float64                `sql:"rx" json:"rx"`
-	Ry                 float64                `sql:"ry" json:"ry"`
-	Exp_id             string                 `sql:"exp_id" json:"exp_id"`
-	Threshold          float32                `sql:"threshold" json:"threshold"`
+	// Chunks_time        int                    `sql:"chunks_time" json:"chunks_time"`
+	// Chunks_vertical    int                    `sql:"chunks_vertical" json:"chunks_vertical"`
+	Rx        float64 `sql:"rx" json:"rx"`
+	Ry        float64 `sql:"ry" json:"ry"`
+	Exp_id    string  `sql:"exp_id" json:"exp_id"`
+	Threshold float32 `sql:"threshold" json:"threshold"`
 }
 
 type SelectDefaultParameters struct {
@@ -44,9 +49,10 @@ type SelectDefaultParameters struct {
 	Lossless           bool    `param:"lossless" `
 	Nan_value_encoding int     `param:"nan_value_encoding" `
 	Threshold          float64 `param:"threshold" `
-	Chunks             int     `param:"chunks"`
-	Rx                 float64 `param:"rx"`
-	Ry                 float64 `param:"ry"`
+	// Chunks_time        int     `param:"chunks_time"`
+	// Chunks_vertical    int     `param:"chunks_vertical"`
+	Rx float64 `param:"rx"`
+	Ry float64 `param:"ry"`
 }
 
 // @Description select an experiment by its id
@@ -56,7 +62,8 @@ type SelectDefaultParameters struct {
 // @Param lossless query bool false "bool lossless"
 // @Param nan_value_encoding query int false "int nan_value_encoding"
 // @Param threshold query float64 false "float threshold"
-// @Param chunks query int false "int chunks"
+// @Param chunks_time query int false "int chunks_time"
+// @Param chunks_vertical query int false "int chunks_vertical"
 // @Param rx query float64 false "float rx"
 // @Param ry query float64 false "float ry"
 // @Success 200 {object} object "experiment"
@@ -127,7 +134,8 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 		extension,
 		lossless,
 		nan_value_encoding,
-		chunks,
+		--chunks_time,
+		--chunks_vertical,
 		rx,
 		ry,
 		exp_id,
@@ -168,7 +176,8 @@ func toAnyList[T any](input []T) []any {
 // @Param lossless query bool false "bool lossless"
 // @Param nan_value_encoding query int false "int nan_value_encoding"
 // @Param threshold query float64 false "float threshold"
-// @Param chunks query int false "int chunks"
+// @Param chunks_time query int false "int chunks_time"
+// @Param chunks_vertical query int false "int chunks_vertical"
 // @Param rx query float64 false "float rx"
 // @Param ry query float64 false "float ry"
 // @Success 200 {object} []object "[]experiment"
@@ -241,7 +250,8 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	SELECT 
 		name AS variable_name,
 		paths_ts,
-		paths_mean,levels,
+		paths_mean,
+		levels,
 		timesteps,
 		xsize,
 		xfirst,
@@ -255,7 +265,8 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		extension,
 		lossless,
 		nan_value_encoding,
-		chunks,
+		--chunks_time,
+		--chunks_vertical,
 		rx,
 		ry,
 		exp_id,
@@ -287,4 +298,23 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return fmt.Errorf("ERROR :: something went wrong when mapping result")
 	}
 	return c.JSON(map_exp)
+}
+
+// @Description Get all different journals that published a paper that is in the database
+// @Success 200 {object} []object "[]journal"
+// @Router /select/journal/ [get]
+func GetJournals(c *fiber.Ctx, pool *pgxpool.Pool) error {
+	query, err := sql.SQLf(`SELECT DISTINCT journal FROM table_publication`)
+	if err != nil {
+		log.Default().Println("ERROR <GetJournals>")
+		return err
+	}
+
+	responses, err := sql.Receive[Journal](context.Background(), &query, pool)
+	if err != nil {
+		log.Default().Println("ERROR <GetJournals>")
+		return err
+	}
+	return c.JSON(responses)
+
 }

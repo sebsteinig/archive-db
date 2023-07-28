@@ -2,8 +2,8 @@ CREATE TABLE IF NOT EXISTS public.table_variable
 (
     id serial NOT NULL,
     name text COLLATE pg_catalog."default" NOT NULL,
-    paths_ts text[] NOT NULL,
-    paths_mean text[] NOT NULL,
+    paths_ts json NOT NULL,
+    paths_mean json NOT NULL,
     levels integer NOT NULL,
     timesteps integer NOT NULL,
     xsize integer NOT NULL,
@@ -28,13 +28,14 @@ CREATE TABLE IF NOT EXISTS public.table_nimbus_execution
     extension text COLLATE pg_catalog."default" NOT NULL,
     lossless boolean NOT NULL,
     nan_value_encoding integer NOT NULL,
-    chunks integer NOT NULL,
+    -- chunks_time integer NOT NULL,
+    -- chunks_vertical integer NOT NULL,
     rx real NOT NULL,
     ry real NOT NULL,
     exp_id text COLLATE pg_catalog."default" NOT NULL,
     threshold real NOT NULL,
     CONSTRAINT table_nimbus_execution_pkey PRIMARY KEY (id),
-    CONSTRAINT unique_config UNIQUE (exp_id, config_name, extension, lossless, nan_value_encoding, chunks, rx, ry)
+    CONSTRAINT unique_config UNIQUE (exp_id, config_name, extension, lossless, nan_value_encoding, rx, ry)
 )
 
 TABLESPACE pg_default;

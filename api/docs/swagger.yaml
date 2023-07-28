@@ -126,9 +126,13 @@ paths:
         in: query
         name: threshold
         type: number
-      - description: int chunks
+      - description: int chunks_time
         in: query
-        name: chunks
+        name: chunks_time
+        type: integer
+      - description: int chunks_vertical
+        in: query
+        name: chunks_vertical
         type: integer
       - description: float rx
         in: query
@@ -174,9 +178,13 @@ paths:
         in: query
         name: threshold
         type: number
-      - description: int chunks
+      - description: int chunks_time
         in: query
-        name: chunks
+        name: chunks_time
+        type: integer
+      - description: int chunks_vertical
+        in: query
+        name: chunks_vertical
         type: integer
       - description: float rx
         in: query
@@ -189,6 +197,17 @@ paths:
       responses:
         "200":
           description: '[]experiment'
+          schema:
+            items:
+              type: object
+            type: array
+  /select/journal/:
+    get:
+      description: Get all different journals that published a paper that is in the
+        database
+      responses:
+        "200":
+          description: '[]journal'
           schema:
             items:
               type: object
