@@ -20,7 +20,7 @@ import (
 )
 
 // @title Fiber Example API
-// @version 1.0
+// @version 1.3
 // @description API for climatearchive
 // @host localhost:3000
 // @BasePath /
