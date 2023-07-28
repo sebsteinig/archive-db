@@ -44,7 +44,7 @@ func main() {
 		AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
-	app.Static("/", "./static")
+
 	pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal("Unable to connect to database:", err)
