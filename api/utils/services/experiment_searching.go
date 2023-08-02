@@ -281,20 +281,20 @@ func SearchExperimentForPublication(c *fiber.Ctx, pool *pgxpool.Pool) error {
 			table_publication.authors_full,
 			table_publication.authors_short
 		FROM table_publication
-		INNER JOIN (
-		select 
-			join_publication_exp.publication_id
-		from 
-			join_publication_exp
-		except
-		select
-			join_publication_exp.publication_id
-		from 
-			join_publication_exp
-		where
-			join_publication_exp.requested_exp_id is not NULL or join_publication_exp.exp_id is NULL
-		) as res
-		ON res.publication_id = table_publication.id 
+		--INNER JOIN (
+		--select 
+		--	join_publication_exp.publication_id
+		--from 
+		--	join_publication_exp
+		--except
+		--select
+		--	join_publication_exp.publication_id
+		--from 
+		--	join_publication_exp
+		--where
+		--	join_publication_exp.requested_exp_id is not NULL or join_publication_exp.exp_id is NULL
+		--) as res
+		--ON res.publication_id = table_publication.id 
 		INNER JOIN join_publication_exp
 		ON join_publication_exp.publication_id = table_publication.id %s
 		GROUP BY table_publication.id,table_publication.title,join_publication_exp.publication_id
