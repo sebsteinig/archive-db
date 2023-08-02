@@ -84,7 +84,17 @@ func insertPublication(publications []Publication, ids *[]int, tx pgx.Tx) error 
 		return err
 	}
 	query.Suffixe(` 
-		ON CONFLICT (title, journal, year, owner_name) DO NOTHING
+		ON CONFLICT (title, journal, year, owner_name) 
+		DO 
+			UPDATE SET 
+				title = EXCLUDED.title , 
+				authors_short = EXCLUDED.authors_short ,
+				authors_full = EXCLUDED.authors_full , 
+				year = EXCLUDED.year , 
+				owner_name = EXCLUDED.owner_name , 
+				owner_email = EXCLUDED.owner_email , 
+				abstract = EXCLUDED.abstract , 
+				brief_desc = EXCLUDED.brief_desc 
 		RETURNING id
 	`)
 	type Id struct {
