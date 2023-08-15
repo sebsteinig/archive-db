@@ -246,6 +246,7 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		FROM table_nimbus_execution 
 		WHERE %s %s
 		ORDER BY created_at desc
+		LIMIT 1
 	)
 	SELECT 
 		name AS variable_name,

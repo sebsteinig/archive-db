@@ -154,10 +154,10 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return searchExperimentWith(query_parameters, labels.([]string), c, pool)
 	}
 	type LikeParam struct {
-		Like []string `param:"like"`
+		Like string `param:"like"`
 	}
-	likeParam := new(LikeParam)
-	like_parameter, err := utils.BuildQueryParameters(c, likeParam)
+	like_param := new(LikeParam)
+	like_parameter, err := utils.BuildQueryParameters(c, like_param)
 
 	param_builder := sql.AndBuilder{
 		Value:      []sql.SqlBuilder{},
@@ -171,7 +171,7 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	}
 
 	if like, ok := like_parameter["Like"]; ok {
-		param_builder.And(sql.EqualBuilder{
+		param_builder.And(sql.LikeBuilder{
 			Key:   "exp_id",
 			Value: like,
 		})
