@@ -194,7 +194,8 @@ func SearchExperimentLike(c *fiber.Ctx, pool *pgxpool.Pool) error {
 			ON table_nimbus_execution.exp_id = table_exp.exp_id
 
 		GROUP BY id,table_exp.exp_id
-		ORDER BY created_at DESC;
+		ORDER BY created_at DESC
+		LIMIT 50;
 	`, param_builder)
 	if err != nil {
 		log.Default().Println("ERROR <SearchExperimentLike>")
