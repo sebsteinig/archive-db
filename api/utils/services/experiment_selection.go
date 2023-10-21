@@ -215,7 +215,8 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	for key, value := range query_parameters {
 		param_builder.And(sql.EqualBuilder{
 			Key:   strings.ToLower(key),
-			Value: value,
+			// Value: value,
+			Value: true,
 		})
 	}
 
@@ -237,7 +238,8 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	for _, value := range variable_params.Variables {
 		params_vars_builder.Or(sql.EqualBuilder{
 			Key:   "variable_name",
-			Value: value,
+			// Value: value,
+			Value: true,
 		})
 	}
 
