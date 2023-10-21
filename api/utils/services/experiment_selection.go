@@ -245,7 +245,7 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	(
 		SELECT *
 		FROM table_nimbus_execution 
-		WHERE %s %s
+		WHERE exp_id = %s %s
 		ORDER BY created_at desc
 		LIMIT 1
 	)
