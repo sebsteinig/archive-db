@@ -245,11 +245,53 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	log.Default().Println("param_builder:", param_builder)
 	log.Default().Println("params_vars_builder:", params_vars_builder)
 
-	query, err := sql.SQLf(`WITH nimbus_run AS 
+	// query, err := sql.SQLf(`WITH nimbus_run AS 
+	// (
+	// 	SELECT *
+	// 	FROM table_nimbus_execution 
+	// 	WHERE %s %s
+	// 	ORDER BY created_at desc
+	// 	LIMIT 1
+	// )
+	// SELECT 
+	// 	name AS variable_name,
+	// 	paths_ts,
+	// 	paths_mean,
+	// 	levels,
+	// 	timesteps,
+	// 	xsize,
+	// 	xfirst,
+	// 	xinc,
+	// 	ysize,
+	// 	yfirst,
+	// 	yinc,
+	// 	metadata,
+	// 	created_at,
+	// 	config_name,
+	// 	extension,
+	// 	lossless,
+	// 	nan_value_encoding,
+	// 	--chunks_time,
+	// 	--chunks_vertical,
+	// 	rx,
+	// 	ry,
+	// 	exp_id,
+	// 	threshold
+	// FROM table_variable
+	// INNER JOIN 
+	// 	( 
+	// 		SELECT * 
+	// 		FROM join_nimbus_execution_variables
+	// 		INNER JOIN nimbus_run 
+	// 		ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
+	// 	) AS joined
+	// ON table_variable.id = joined.variable_id %s`, in_builder, param_builder, params_vars_builder)
+
+	query =`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
-		WHERE %s %s
+		WHERE exp_id IN ('texqe', 'texqd', 'texqc')
 		ORDER BY created_at desc
 		LIMIT 1
 	)
@@ -279,17 +321,18 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		threshold
 	FROM table_variable
 	INNER JOIN 
-		( 
-			SELECT * 
-			FROM join_nimbus_execution_variables
-			INNER JOIN nimbus_run 
-			ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
-		) AS joined
-	ON table_variable.id = joined.variable_id %s`, in_builder, param_builder, params_vars_builder)
-	if err != nil {
-		log.Default().Println("ERROR <GetExperimentsByIDs> - SQL Construction")
-		return err
-	}
+	( 
+		SELECT * 
+		FROM join_nimbus_execution_variables
+		INNER JOIN nimbus_run 
+		ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
+	) AS joined
+	ON table_variable.id = joined.variable_id;
+	` 
+	// if err != nil {
+	// 	log.Default().Println("ERROR <GetExperimentsByIDs> - SQL Construction")
+	// 	return err
+	// }
 	log.Default().Println("Constructed SQL:", query)
 	responses, err := sql.Receive[Response](context.Background(), &query, pool)
 	if err != nil {
