@@ -287,7 +287,7 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	// 	) AS joined
 	// ON table_variable.id = joined.variable_id %s`, in_builder, param_builder, params_vars_builder)
 
-	query :=`WITH nimbus_run AS 
+	query, err := sql.SQLf(`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
@@ -328,7 +328,7 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		ON join_nimbus_execution_variables.id_nimbus_execution = nimbus_run.id
 	) AS joined
 	ON table_variable.id = joined.variable_id;
-	` 
+	`)
 	if err != nil {
 		log.Default().Println("ERROR <GetExperimentsByIDs> - SQL Construction")
 		return err
