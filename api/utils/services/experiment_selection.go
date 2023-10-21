@@ -241,24 +241,12 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		})
 	}
 
-	log.Default().Println("in_builder:", in_builder)
-	log.Default().Println("param_builder:", param_builder)
-	log.Default().Println("params_vars_builder:", params_vars_builder)
-
-	// (
-	// 	SELECT *
-	// 	FROM table_nimbus_execution 
-	// 	WHERE %s %s
-	// 	ORDER BY created_at desc
-	// 	LIMIT 1
-	// )
-
 	query, err := sql.SQLf(`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
 		WHERE %s %s
-		ORDER BY created_at desc
+		ORDER BY exp_id, created_at DESC
 	)
 	SELECT 
 		name AS variable_name,
@@ -298,19 +286,18 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		log.Default().Println("ERROR <GetExperimentsByIDs> - SQL Construction")
 		return err
 	}
-	log.Default().Println("Constructed SQL:", query)
+
 	responses, err := sql.Receive[Response](context.Background(), &query, pool)
 	if err != nil {
 		log.Default().Println("ERROR <GetExperimentsByIDs>")
 		return err
 	}
-	log.Default().Println("Database Results:", responses)
 
 	var map_exp map[string][]Response = make(map[string][]Response)
 	for _, res := range responses {
 		map_exp[res.Exp_id] = append(map_exp[res.Exp_id], res)
 	}
-	log.Default().Println("Constructed Response Map:", map_exp)
+
 	if len(responses) > 0 && len(map_exp) == 0 {
 		return fmt.Errorf("ERROR :: something went wrong when mapping result")
 	}
