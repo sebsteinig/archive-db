@@ -241,6 +241,10 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		})
 	}
 
+	log.Default().Println("in_builder:", in_builder)
+	log.Default().Println("param_builder:", param_builder)
+	log.Default().Println("params_vars_builder:", params_vars_builder)
+
 	query, err := sql.SQLf(`WITH nimbus_run AS 
 	(
 		SELECT *
