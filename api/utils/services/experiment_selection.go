@@ -109,8 +109,9 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 	// 	})
 	// }
 
-	params_vars_builder := sql.RawBuilder{
-		Raw: "TRUE",
+	params_vars_builder := sql.EqualBuilder{
+		Key:   "1",
+		Value: "1",
 	}
 	
 	query, err := sql.SQLf(`WITH nimbus_run AS 
