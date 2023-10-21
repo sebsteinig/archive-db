@@ -197,10 +197,11 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	ids_param := new(Ids)
 	_, err = utils.BuildQueryParameters(c, ids_param)
 	if err != nil {
-		log.Default().Println("ERROR <GetExperimentsByIDs>")
+		log.Default().Println("ERROR <GetExperimentsByIDs> - Parsing IDs")
 		log.Default().Println("error :", err)
 		return err
 	}
+	log.Default().Println("Parsed IDs:", ids_param.Ids)
 
 	in_builder := sql.InBuilder{
 		Key:   "exp_id",
@@ -282,9 +283,10 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		) AS joined
 	ON table_variable.id = joined.variable_id %s`, in_builder, param_builder, params_vars_builder)
 	if err != nil {
-		log.Default().Println("ERROR <GetExperimentsByIDs>")
+		log.Default().Println("ERROR <GetExperimentsByIDs> - SQL Construction")
 		return err
 	}
+	log.Default().Println("Constructed SQL:", query)
 	responses, err := sql.Receive[Response](context.Background(), &query, pool)
 	if err != nil {
 		log.Default().Println("ERROR <GetExperimentsByIDs>")
