@@ -241,15 +241,15 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		})
 	}
 
-	query, err := sql.SQLf(`WITH nimbus_run AS 
+query, err := sql.SQLf(`WITH nimbus_run AS 
 	(
 		SELECT *
 		FROM table_nimbus_execution 
-		WHERE %s %s
 		ORDER BY created_at desc
 		LIMIT 1
 	)
-	`, in_builder, param_builder)
+	`)
+
 	
 	if err != nil {
 		log.Default().Println("ERROR <GetExperimentsByIDs> - SQL Construction")
