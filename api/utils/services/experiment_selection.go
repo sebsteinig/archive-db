@@ -292,11 +292,13 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		log.Default().Println("ERROR <GetExperimentsByIDs>")
 		return err
 	}
+	log.Default().Println("Database Results:", responses)
 
 	var map_exp map[string][]Response = make(map[string][]Response)
 	for _, res := range responses {
 		map_exp[res.Exp_id] = append(map_exp[res.Exp_id], res)
 	}
+	log.Default().Println("Constructed Response Map:", map_exp)
 	if len(responses) > 0 && len(map_exp) == 0 {
 		return fmt.Errorf("ERROR :: something went wrong when mapping result")
 	}
