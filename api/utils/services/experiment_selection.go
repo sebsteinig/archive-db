@@ -203,10 +203,10 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 	}
 	log.Default().Println("Parsed IDs:", ids_param.Ids)
 
-	in_builder := sql.InBuilder{
-		Key:   "exp_id",
-		Value: toAnyList(ids_param.Ids),
-	}
+	// in_builder := sql.InBuilder{
+	// 	Key:   "exp_id",
+	// 	Value: toAnyList(ids_param.Ids),
+	// }
 
 	param_builder := sql.AndBuilder{
 		Value:      []sql.SqlBuilder{},
