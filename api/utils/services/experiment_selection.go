@@ -98,10 +98,10 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 		return err
 	}
 
-	// params_vars_builder := sql.OrBuilder{
-	// 	Value:      []sql.SqlBuilder{},
-	// 	And_Prefix: true,
-	// }
+	params_vars_builder := sql.OrBuilder{
+		Value:      []sql.SqlBuilder{},
+		And_Prefix: true,
+	}
 	// for _, value := range variable_params.Variables {
 	// 	params_vars_builder.Or(sql.EqualBuilder{
 	// 		Key:   "variable_name",
@@ -109,9 +109,11 @@ func GetExperimentByID(id string, c *fiber.Ctx, pool *pgxpool.Pool) error {
 	// 	})
 	// }
 
-	params_vars_builder := sql.EqualBuilder{
-		Key:   "1",
-		Value: "1",
+	for i := 0; i < 3; i++ {
+		params_vars_builder.Or(sql.EqualBuilder{
+			Key:   "1",
+			Value: "1",
+		})
 	}
 	
 	query, err := sql.SQLf(`WITH nimbus_run AS 
