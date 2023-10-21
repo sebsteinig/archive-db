@@ -12,6 +12,7 @@ services :
       - db_network
   db :
     container_name : postgres_container
+    image: postgres:15   # Use the PostgreSQL 15 image from Docker Hub
     build :
       context : ./database
       dockerfile : Dockerfile
