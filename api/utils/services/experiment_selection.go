@@ -249,7 +249,7 @@ func GetExperimentsByIDs(c *fiber.Ctx, pool *pgxpool.Pool) error {
 		ORDER BY created_at desc
 		LIMIT 1
 	)
-	`, in_builder, param_builder, params_vars_builder)
+	`, in_builder, param_builder)
 	
 	if err != nil {
 		log.Default().Println("ERROR <GetExperimentsByIDs> - SQL Construction")
